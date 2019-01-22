@@ -37,7 +37,8 @@ if __name__ == "main()":
         'Authorization': 'Bearer 2:EWAWmaXb4TgtYVU2VvwoEF-9UbJxBahkiFh1633_Oc9nmju7iJis',
     }
 
-    # Upload Project-Experiment table
+############################################### Project-Experiment #############################################
+
     # get all projects
     try:
         response_proj = requests.get('https://api.optimizely.com/v2/projects', headers=headers)
@@ -76,11 +77,12 @@ if __name__ == "main()":
             upload_exp_list.append(flatten(exp, {}, ''))
 
         # upload experiment 
-        pope.write_to_json(file_name='experiments.json', jayson=upload_exp_list, mode='w')
-        pope.write_to_bq(table_name='experiments', file_name='experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-
+        pope.write_to_json(file_name='uploads/experiments.json', jayson=upload_exp_list, mode='w')
+        pope.write_to_bq(table_name='experiments', file_name='uploads/experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
 
         project_list.append(project)
 
-    pope.write_to_json(file_name='projects.json', jayson=project_list, mode='w')
-    pope.write_to_bq(table_name='projects', file_name='projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    pope.write_to_json(file_name='uploads/projects.json', jayson=project_list, mode='w')
+    pope.write_to_bq(table_name='projects', file_name='uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+
+############################################### Experiment-Results #############################################
