@@ -26,17 +26,8 @@ def flatten(jayson, acc, prefix):
     else:
         return acc
 
-
-if __name__ == "main()":
-
-    gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
-
-    pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
-
-    headers = {
-        'Authorization': 'Bearer 2:EWAWmaXb4TgtYVU2VvwoEF-9UbJxBahkiFh1633_Oc9nmju7iJis',
-    }
-
+def main():
+ 
 ############################################### Project-Experiment #############################################
 
     # get all projects
@@ -77,12 +68,64 @@ if __name__ == "main()":
             upload_exp_list.append(flatten(exp, {}, ''))
 
         # upload experiment 
-        pope.write_to_json(file_name='uploads/experiments.json', jayson=upload_exp_list, mode='w')
-        pope.write_to_bq(table_name='experiments', file_name='uploads/experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        pope.write_to_json(file_name='../uploads/experiments.json', jayson=upload_exp_list, mode='w')
+        pope.write_to_bq(table_name='experiments', file_name='../uploads/experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        print(f"Successfully uploaded experiments for project {p_id}")
 
         project_list.append(project)
 
-    pope.write_to_json(file_name='uploads/projects.json', jayson=project_list, mode='w')
-    pope.write_to_bq(table_name='projects', file_name='uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    pope.write_to_json(file_name='../uploads/projects.json', jayson=project_list, mode='w')
+    pope.write_to_bq(table_name='projects', file_name='../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    print("Successfully uploaded all projects.")
 
 ############################################### Experiment-Results #############################################
+
+    # get results from all experiments:
+    for exp in j_exp:
+        experiment_id = exp['id']
+        response_res = requests.get(f'https://api.optimizely.com/v2/experiments/{experiment_id}/results', headers=headers)
+
+        j_res = json.loads(response_res.text)
+
+        results_duped = []
+        other_metric_keys = ['aggregator', 'event_id', 'name', 'scope', 'winning_direction']
+        other_experiment_keys = ['confidence_threshold', 'end_time', 'experiment_id', 'reach', 'start_time', 'stats_config']
+
+        for metric in j_res['metrics']:
+            for key, value in metric.items():
+                if key == 'results':
+                    d = {}
+                    for result_key, result_value in value.items():
+                        d[result_key] = flatten(result_value, {}, '')
+                        
+            for k, v in d.items():
+                new_d = {}
+                new_d['result_id'] = k
+                new_d['result'] = v
+                for key in other_metric_keys:
+                    new_d[key] = metric[key]
+                for key in other_experiment_keys:
+                    new_d[key] = j_res[key]
+                results_duped.append(new_d)
+            
+        new_result = []
+        for result in results_duped:
+            new_result.append(flatten(result, {}, ''))
+        
+        # upload results 
+        pope.write_to_json(file_name='../uploads/results.json', jayson=upload_exp_list, mode='w')
+        pope.write_to_bq(table_name='results', file_name='../uploads/results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        print(f"Successfully uploaded results for all experiments in experiment {experiment_id}.")
+
+
+if __name__ == '__main__':
+
+    gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
+
+    pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
+
+    headers = {
+        'Authorization': 'Bearer 2:EWAWmaXb4TgtYVU2VvwoEF-9UbJxBahkiFh1633_Oc9nmju7iJis',
+    }
+
+    main()
