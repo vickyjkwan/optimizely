@@ -87,6 +87,22 @@ def main():
 
         j_ts = json.loads(response_ts.text)
 
+        # this function will be called in the fix_json_values and passed on to callback, to reset id keys to be a key:val pair ('id': {string of id})
+        def fix_values(value, key):
+            if key == 'results':
+                new_list = []
+                for x in value:
+                    value[x]['result_id'] = x
+                    new_list.append(value[x])
+                return new_list
+            else:
+                return value
+        
+        new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts)
+
+        # with keys properly reset, we need to populate upper level into each row of each list level
+        
+
         # results_duped = []
         # other_metric_keys = ['aggregator', 'event_id', 'name', 'scope', 'winning_direction']
         # other_experiment_keys = ['confidence_threshold', 'end_time', 'experiment_id', 'start_time', 'stats_config']
