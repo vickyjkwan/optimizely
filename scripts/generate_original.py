@@ -80,42 +80,42 @@ def main():
 
 ############################################### Experiment-Results #############################################
 
-    # get results from all experiments:
+    # get result time series from all experiments:
     for exp in j_exp:
         experiment_id = exp['id']
-        response_res = requests.get(f'https://api.optimizely.com/v2/experiments/{experiment_id}/results', headers=headers)
+        response_ts = requests.get(f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries', headers=headers)
 
-        j_res = json.loads(response_res.text)
+        j_ts = json.loads(response_ts.text)
 
-        results_duped = []
-        other_metric_keys = ['aggregator', 'event_id', 'name', 'scope', 'winning_direction']
-        other_experiment_keys = ['confidence_threshold', 'end_time', 'experiment_id', 'start_time', 'stats_config']
+        # results_duped = []
+        # other_metric_keys = ['aggregator', 'event_id', 'name', 'scope', 'winning_direction']
+        # other_experiment_keys = ['confidence_threshold', 'end_time', 'experiment_id', 'start_time', 'stats_config']
 
-        for metric in j_res['metrics']:
-            for key, value in metric.items():
-                if key == 'results':
-                    d = {}
-                    for result_key, result_value in value.items():
-                        d[result_key] = flatten(result_value, {}, '')
+        # for metric in j_ts['metrics']:
+        #     for key, value in metric.items():
+        #         if key == 'results':
+        #             d = {}
+        #             for result_key, result_value in value.items():
+        #                 d[result_key] = flatten(result_value, {}, '')
                         
-            for k, v in d.items():
-                new_d = {}
-                new_d['result_id'] = k
-                new_d['result'] = v
-                for key in other_metric_keys:
-                    new_d[key] = metric[key]
-                for key in other_experiment_keys:
-                    new_d[key] = j_res[key]
-                results_duped.append(new_d)
+        #     for k, v in d.items():
+        #         new_d = {}
+        #         new_d['result_id'] = k
+        #         new_d['result'] = v
+        #         for key in other_metric_keys:
+        #             new_d[key] = metric[key]
+        #         for key in other_experiment_keys:
+        #             new_d[key] = j_ts[key]
+        #         results_duped.append(new_d)
             
-        new_result = []
-        for result in results_duped:
-            new_result.append(flatten(result, {}, ''))
+        # new_result = []
+        # for result in results_duped:
+        #     new_result.append(flatten(result, {}, ''))
         
         # upload results 
-        pope.write_to_json(file_name='../uploads/results.json', jayson=new_result, mode='w')
-        pope.write_to_bq(table_name='results', file_name='../uploads/results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        print(f"Successfully uploaded results for all experiments in experiment {experiment_id}.")
+        pope.write_to_json(file_name='../uploads/result_ts.json', jayson=new_result, mode='w')
+        pope.write_to_bq(table_name='result_ts', file_name='../uploads/result_ts.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        print(f"Successfully uploaded result time series for all experiments in experiment {experiment_id}.")
 
 
 if __name__ == '__main__':
