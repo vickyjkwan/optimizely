@@ -89,7 +89,7 @@ def main():
 
         results_duped = []
         other_metric_keys = ['aggregator', 'event_id', 'name', 'scope', 'winning_direction']
-        other_experiment_keys = ['confidence_threshold', 'end_time', 'experiment_id', 'reach', 'start_time', 'stats_config']
+        other_experiment_keys = ['confidence_threshold', 'end_time', 'experiment_id', 'start_time', 'stats_config']
 
         for metric in j_res['metrics']:
             for key, value in metric.items():
@@ -113,7 +113,7 @@ def main():
             new_result.append(flatten(result, {}, ''))
         
         # upload results 
-        pope.write_to_json(file_name='../uploads/results.json', jayson=upload_exp_list, mode='w')
+        pope.write_to_json(file_name='../uploads/results.json', jayson=new_result, mode='w')
         pope.write_to_bq(table_name='results', file_name='../uploads/results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
         print(f"Successfully uploaded results for all experiments in experiment {experiment_id}.")
 
