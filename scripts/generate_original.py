@@ -101,7 +101,37 @@ def main():
         new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts)
 
         # with keys properly reset, we need to populate upper level into each row of each list level
-        
+        # Trying to flatten inner level 'timeseries'
+        flattened_timeseries = []
+        for element in new_j_ts['metrics'][0]['results'][0]['timeseries']:
+            flattened_timeseries.append(flatten(element, {}, ''))
+        print(len(flattened_timeseries))
+
+        # Replace old 'timeseries' with new 'flattened_timeseries'
+        updated_results = {}
+        for k, v in new_j_ts['metrics'][0]['results'][0].items():
+            if k == 'timeseries':
+                updated_results[k] = flattened_timeseries
+            else:
+                updated_results[k] = v
+
+        duped_results = []
+        for timestamp in updated_results['timeseries']:
+            ts_dict = {}
+            for key, val in updated_results.items():
+                if key != 'timeseries':
+                    ts_dict[key] = val
+                else:
+                    ts_dict[key] = timestamp
+            duped_results.append(ts_dict)
+
+        flattened_results = []
+        for element in duped_results:
+            flattened_results.append(flatten(element, {}, ''))
+
+        ######### so far, each result timestamp is captured and flattened out in each row, with upper level metrics in the ['metrics'][0]['results'] populated to each row
+
+
 
         # results_duped = []
         # other_metric_keys = ['aggregator', 'event_id', 'name', 'scope', 'winning_direction']
