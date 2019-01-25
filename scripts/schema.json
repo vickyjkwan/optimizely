@@ -1,8 +1,8 @@
 [
   {
     "mode": "NULLABLE",
-    "name": "aggregator",
-    "type": "STRING"
+    "name": "account_id",
+    "type": "INTEGER"
   },
   {
     "mode": "NULLABLE",
@@ -11,18 +11,23 @@
   },
   {
     "mode": "NULLABLE",
-    "name": "end_time",
+    "name": "created",
     "type": "TIMESTAMP"
   },
   {
     "mode": "NULLABLE",
-    "name": "event_id",
+    "name": "id",
     "type": "INTEGER"
   },
   {
     "mode": "NULLABLE",
-    "name": "experiment_id",
-    "type": "INTEGER"
+    "name": "is_classic",
+    "type": "BOOLEAN"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "last_modified",
+    "type": "TIMESTAMP"
   },
   {
     "mode": "NULLABLE",
@@ -31,102 +36,69 @@
   },
   {
     "mode": "NULLABLE",
-    "name": "result_id",
+    "name": "platform",
+    "type": "STRING"
+  },
+  {
+    "mode": "REPEATED",
+    "name": "sdks",
     "type": "STRING"
   },
   {
     "mode": "NULLABLE",
-    "name": "result_is_baseline",
-    "type": "BOOLEAN"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_level",
+    "name": "status",
     "type": "STRING"
   },
   {
+    "fields": [
+      {
+        "mode": "NULLABLE",
+        "name": "code_revision",
+        "type": "INTEGER"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "enable_force_variation",
+        "type": "BOOLEAN"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "exclude_disabled_experiments",
+        "type": "BOOLEAN"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "exclude_names",
+        "type": "BOOLEAN"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "include_jquery",
+        "type": "BOOLEAN"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "ip_anonymization",
+        "type": "BOOLEAN"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "ip_filter",
+        "type": "STRING"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "js_file_size",
+        "type": "INTEGER"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "library",
+        "type": "STRING"
+      }
+    ],
     "mode": "NULLABLE",
-    "name": "result_lift_is_significant",
-    "type": "BOOLEAN"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_lift_lift_status",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_lift_significance",
-    "type": "FLOAT"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_lift_value",
-    "type": "FLOAT"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_lift_visitors_remaining",
-    "type": "INTEGER"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_name",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_rate",
-    "type": "FLOAT"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_samples",
-    "type": "INTEGER"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_value",
-    "type": "FLOAT"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_variance",
-    "type": "FLOAT"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "result_variation_id",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "scope",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "start_time",
-    "type": "TIMESTAMP"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "stats_config_confidence_level",
-    "type": "FLOAT"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "stats_config_difference_type",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "stats_config_epoch_enabled",
-    "type": "BOOLEAN"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "winning_direction",
-    "type": "STRING"
+    "name": "web_snippet",
+    "type": "RECORD"
   }
 ]

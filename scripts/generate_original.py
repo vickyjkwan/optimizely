@@ -69,9 +69,9 @@ def generate_project_experiment(project_endpoint, experiment_endpoint):
     except requests.exceptions.HTTPError as err:
         print(err)
 
-    
     # store a list of project metadata
-    project_list = list()
+    project_list = []
+    experiment_id_list = []
 
     for project in j_proj:
         p_id = project['id']
@@ -95,7 +95,8 @@ def generate_project_experiment(project_endpoint, experiment_endpoint):
         for exp in j_exp:
             exp['project_id'] = p_id
             upload_exp_list.append(flatten(exp, {}, ''))
-
+            experiment_id_list.append(exp['id'])
+            
         # upload experiment 
         pope.write_to_json(file_name='../uploads/experiments.json', jayson=upload_exp_list, mode='w')
         pope.write_to_bq(table_name='experiments', file_name='../uploads/experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
@@ -107,48 +108,66 @@ def generate_project_experiment(project_endpoint, experiment_endpoint):
     pope.write_to_bq(table_name='projects', file_name='../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
     print("Successfully uploaded all projects.")
 
+    return experiment_id_list
 
 
-def generate_experiment_results(ts_endpoint, ):
+def generate_experiment_results(ts_endpoint, experiment_id):
     # get result time series from all experiments:
-    for exp in j_exp:
-        experiment_id = exp['id']
-        response_ts = requests.get(f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries', headers=headers)
-
+    try:
+        response_ts = requests.get(ts_endpoint, headers=headers)
         j_ts = json.loads(response_ts.text)
+        response_ts.raise_for_status()
+        print('Successfully read experiment results data.')
+    except requests.exceptions.HTTPError as err:
+        print(err)
+    
+    # this function will be called in the fix_json_values and passed on to callback, to reset id keys to be a key:val pair ('id': {string of id})
+    # def fix_values(value, key, reset_key):
+    #     if key == reset_key:
+    #         new_list = []
+    #         for x in value:
+    #             value[x][f'{reset_key}_id'] = x
+    #             new_list.append(value[x])
+    #         return new_list
+    #     else:
+    #         return value
+    
+    # new_j_ts = pope.fix_json_values(callback=fix_values(reset_key='results'), obj=j_ts)
 
-        # this function will be called in the fix_json_values and passed on to callback, to reset id keys to be a key:val pair ('id': {string of id})
-        def fix_values(value, key):
-            if key == 'results':
-                new_list = []
-                for x in value:
-                    value[x]['result_id'] = x
-                    new_list.append(value[x])
-                return new_list
-            else:
-                return value
-        
-        new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts)
+    def fix_values(value, key, ):
+        if key == 'results':
+            new_list = []
+            for x in value:
+                value[x]['result_id'] = x
+                new_list.append(value[x])
+            return new_list
+        else:
+            return value
 
-        # with keys properly reset, we need to populate upper level into each row of each list level
-        # Trying to flatten inner level 'timeseries'
-        flattened_timeseries = []
-        for element in new_j_ts['metrics'][0]['results'][0]['timeseries']:
-            flattened_timeseries.append(flatten(element, {}, ''))
+    new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts)
 
-        # Replace old 'timeseries' with new 'flattened_timeseries'
-        updated_results = populating_vals(outer_dict=new_j_ts['metrics'][0]['results'][0], inner_flattened_list=flattened_timeseries, destination_key='timeseries')
-        flattened_results = flatten_dupe_vals(vals=updated_results, key='timeseries')
+    # with keys properly reset, we need to populate upper level into each row of each list level
+    # Trying to flatten inner level 'timeseries'
+    flattened_metrics = []
+    for metric in new_j_ts['metrics']:
+        for ts in metric['results']:
+            flattened_timeseries = []
+            for element in ts['timeseries']:
+                flattened_timeseries.append(flatten(element, {}, ''))
+
+            # Replace old 'timeseries' with new 'flattened_timeseries'
+            updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
+            flattened_results = flatten_dupe_vals(vals=updated_results, key='timeseries')
 
         # Replace old 'metrics' with new 'flattened_results'
-        update_metrics = populating_vals(outer_dict=new_j_ts['metrics'][0], inner_flattened_list=flattened_results, destination_key='results')
-        flattened_metrics = flatten_dupe_vals(vals=update_metrics, key='results')
-
+        update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
+        flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
         
-        # upload results 
-        pope.write_to_json(file_name='../uploads/result_ts.json', jayson=flattened_metrics, mode='w')
-        # pope.write_to_bq(table_name='result_ts', file_name='../uploads/result_ts.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        # print(f"Successfully uploaded result time series for all experiments in experiment {experiment_id}.")
+    
+    # upload results 
+    pope.write_to_json(file_name='../uploads/results_ts.json', jayson=flattened_metrics, mode='w')
+    # pope.write_to_bq(table_name='result_ts', file_name='../uploads/result_ts.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    # print(f"Successfully uploaded result time series for all experiments in experiment {experiment_id}.")
 
 
 if __name__ == '__main__':
@@ -165,7 +184,10 @@ if __name__ == '__main__':
     p_endpoint = 'https://api.optimizely.com/v2/projects'
     e_endpoint = 'https://api.optimizely.com/v2/experiments'
 
-    generate_project_experiment(project_endpoint=p_endpoint, experiment_endpoint=e_endpoint)
-
+    experiment_id = generate_project_experiment(project_endpoint=p_endpoint, experiment_endpoint=e_endpoint)
 
     ############################################### Experiment-Results #############################################
+    for exp_id in experiment_id:
+        ts_endpoint = f'https://api.optimizely.com/v2/experiments/{exp_id}/timeseries'
+        generate_experiment_results(ts_endpoint, experiment_id=exp_id)
+        
