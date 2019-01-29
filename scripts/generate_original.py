@@ -4,6 +4,18 @@ import popelines
 import os
 from datetime import datetime
 
+
+def fix_values(value, key, reset_key):
+    if key == reset_key:
+        new_list = []
+        for x in value:
+            value[x][f'{reset_key}_id'] = x
+            new_list.append(value[x])
+        return new_list
+    else:
+        return value
+
+
 # a function to populate upper level key:val pairs into lower level list of dictionaries
 # returns a dictionary with the each row inherets all metadata from upper level
 def populating_vals(outer_dict, inner_flattened_list, destination_key):
@@ -98,15 +110,15 @@ def generate_project_experiment(project_endpoint, experiment_endpoint):
             experiment_id_list.append(exp['id'])
             
         # upload experiment 
-        pope.write_to_json(file_name='../uploads/experiments.json', jayson=upload_exp_list, mode='w')
-        pope.write_to_bq(table_name='experiments', file_name='../uploads/experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        print(f"Successfully uploaded experiments for project {p_id}")
+        # pope.write_to_json(file_name='../uploads/experiments.json', jayson=upload_exp_list, mode='w')
+        # pope.write_to_bq(table_name='experiments', file_name='../uploads/experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        # print(f"Successfully uploaded experiments for project {p_id}")
 
     project_list.append(project)
 
-    pope.write_to_json(file_name='../uploads/projects.json', jayson=project_list, mode='w')
-    pope.write_to_bq(table_name='projects', file_name='../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-    print("Successfully uploaded all projects.")
+    # pope.write_to_json(file_name='../uploads/projects.json', jayson=project_list, mode='w')
+    # pope.write_to_bq(table_name='projects', file_name='../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    # print("Successfully uploaded all projects.")
 
     return experiment_id_list
 
@@ -186,8 +198,26 @@ if __name__ == '__main__':
 
     experiment_id = generate_project_experiment(project_endpoint=p_endpoint, experiment_endpoint=e_endpoint)
 
+    all_ts = []
     ############################################### Experiment-Results #############################################
     for exp_id in experiment_id:
+        print(exp_id)
         ts_endpoint = f'https://api.optimizely.com/v2/experiments/{exp_id}/timeseries'
-        generate_experiment_results(ts_endpoint, experiment_id=exp_id)
+        # generate_experiment_results(ts_endpoint, experiment_id=exp_id)
+        ####################### TO DO #######################
+        # write an if-else to test if response.text == ''
+        # if '' then the experiment has not started yet
+        response_ts = requests.get(ts_endpoint, headers=headers)
+        print(response_ts)
+        j_ts = json.loads(response_ts.text)
+        new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
+        # new_j_ts_list = [new_j_ts]
+        
+        all_ts.append(new_j_ts)
+
+    pope.write_to_json(file_name='test_results_all.json', jayson=all_ts, mode='w')
+    pope.write_to_bq(table_name='test_results_all', file_name='test_results_all.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+
+
+
         
