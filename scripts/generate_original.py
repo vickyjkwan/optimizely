@@ -133,31 +133,6 @@ def generate_experiment_results(ts_endpoint, experiment_id):
     except requests.exceptions.HTTPError as err:
         print(err)
     
-    # this function will be called in the fix_json_values and passed on to callback, to reset id keys to be a key:val pair ('id': {string of id})
-    # def fix_values(value, key, reset_key):
-    #     if key == reset_key:
-    #         new_list = []
-    #         for x in value:
-    #             value[x][f'{reset_key}_id'] = x
-    #             new_list.append(value[x])
-    #         return new_list
-    #     else:
-    #         return value
-    
-    # new_j_ts = pope.fix_json_values(callback=fix_values(reset_key='results'), obj=j_ts)
-
-    def fix_values(value, key, ):
-        if key == 'results':
-            new_list = []
-            for x in value:
-                value[x]['result_id'] = x
-                new_list.append(value[x])
-            return new_list
-        else:
-            return value
-
-    new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts)
-
     # with keys properly reset, we need to populate upper level into each row of each list level
     # Trying to flatten inner level 'timeseries'
     flattened_metrics = []
@@ -175,7 +150,6 @@ def generate_experiment_results(ts_endpoint, experiment_id):
         update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
         flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
         
-    
     # upload results 
     pope.write_to_json(file_name='../uploads/results_ts.json', jayson=flattened_metrics, mode='w')
     # pope.write_to_bq(table_name='result_ts', file_name='../uploads/result_ts.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
@@ -204,12 +178,14 @@ if __name__ == '__main__':
         print(exp_id)
         ts_endpoint = f'https://api.optimizely.com/v2/experiments/{exp_id}/timeseries'
         # generate_experiment_results(ts_endpoint, experiment_id=exp_id)
-        ####################### TO DO #######################
-        # write an if-else to test if response.text == ''
-        # if '' then the experiment has not started yet
+
         response_ts = requests.get(ts_endpoint, headers=headers)
-        print(response_ts)
-        j_ts = json.loads(response_ts.text)
+        if response_ts.text == '':
+            # if '' then the experiment has not started yet
+            j_ts = {'experiment_id': exp_id}
+        else:
+            j_ts = json.loads(response_ts.text)
+ 
         new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
         # new_j_ts_list = [new_j_ts]
         
