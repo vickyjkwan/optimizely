@@ -150,6 +150,8 @@ def generate_experiment_results(ts_endpoint, experiment_id):
         update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
         flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
         
+    return flattened_metrics
+    
     # upload results 
     pope.write_to_json(file_name='../uploads/results_ts.json', jayson=flattened_metrics, mode='w')
     # pope.write_to_bq(table_name='result_ts', file_name='../uploads/result_ts.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
