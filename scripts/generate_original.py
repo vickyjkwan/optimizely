@@ -64,7 +64,7 @@ if __name__ == '__main__':
     # endpoints
     project_endpoint = 'https://api.optimizely.com/v2/projects'
     experiment_endpoint = 'https://api.optimizely.com/v2/experiments'
-    result_endpoint = f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries'
+    # result_endpoint = f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries'
 
 
     ############################################### generate and upload all projects ##############################
@@ -103,6 +103,7 @@ if __name__ == '__main__':
     ############################################### generate and upload all result time series ########################
     # loop over all experiment_id in experiment_id_list from above
     for experiment_id in experiment_id_list:
+        result_endpoint = f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries'
         response_ts = requests.get(result_endpoint, headers=headers)
 
         # if '' then the experiment has not started yet
