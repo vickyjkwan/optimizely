@@ -131,7 +131,11 @@ if __name__ == '__main__':
                     new_dict['result_variation_id'] = result['variation_id']
                     new_dict['result_id'] = result['results_id']
                     
-                    new_dict['time_series_rate'] = timeseries['rate']
+                    if 'rate' in timeseries.keys():
+                        new_dict['time_series_rate'] = timeseries['rate']
+                    else:
+                        pass
+                        
                     new_dict['time_series_time'] = timeseries['time']
                     new_dict['time_series_value'] = timeseries['value']
                     new_dict['time_series_samples'] = timeseries['samples']
