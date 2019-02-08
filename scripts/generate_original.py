@@ -105,7 +105,7 @@ if __name__ == '__main__':
     for experiment_id in experiment_id_list:
         result_endpoint = f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries'
         response_ts = requests.get(result_endpoint, headers=headers)
-
+        print(f"got experiment {experiment_id}")
         # if '' then the experiment has not started yet
         if response_ts.text == '':
             j_ts = {'experiment_id': experiment_id}
