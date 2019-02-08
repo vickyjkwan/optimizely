@@ -1,8 +1,9 @@
 import json
 import requests
-from main import flatten, fix_values
 import popelines
 import os
+from datetime import datetime
+from main import flatten, fix_values
 
 
 # read endpoint, returns a json file of the HTTP request
@@ -28,6 +29,7 @@ def generate_experiments(project_id, experiment_endpoint, experiment_headers, ex
     upload_exp_list = []
     for exp in j_exp:
         exp['project_id'] = project_id
+        exp['upload_ts'] = str(datetime.now())
         upload_exp_list.append(flatten(exp, {}, ''))
         experiment_id_list.append(exp['id'])
         
@@ -45,7 +47,13 @@ def generate_projects(project_endpoint, project_headers):
 if __name__ == '__main__':
 
     ############################################### Keys and Authentication #######################################
+    if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
+        os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
     gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
+
+    directory = str(os.path.abspath(os.path.dirname(__file__)))
+
+    ############################################### Instantiating Popelines #######################################
     pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
 
     # Optimizely parameters
@@ -62,8 +70,8 @@ if __name__ == '__main__':
     ############################################### generate and upload all projects ##############################
     all_projects = generate_projects(project_endpoint, headers)
     # upload projects 
-    pope.write_to_json(file_name='../uploads/projects.json', jayson=all_projects, mode='w')
-    pope.write_to_bq(table_name='projects', file_name='../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    pope.write_to_json(file_name=f'{directory}/../uploads/projects.json', jayson=all_projects, mode='w')
+    pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
     
 
     ############################################### generate and upload all experiments ###########################
@@ -87,8 +95,8 @@ if __name__ == '__main__':
         experiment_id_list.extend(exp_id_list)
 
         # upload experiments
-        pope.write_to_json(file_name='../uploads/origin_experiments.json', jayson=exp_list, mode='w')
-        pope.write_to_bq(table_name='experiments', file_name='../uploads/origin_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments.json', jayson=exp_list, mode='w')
+        pope.write_to_bq(table_name='experiments', file_name=f'{directory}/../uploads/origin_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
         print(f"Successfully uploaded experiments for project {project_id}")
 
     
@@ -130,7 +138,8 @@ if __name__ == '__main__':
 
                     flattened_metrics.append(new_dict)
         new_j_ts['metrics'] = flattened_metrics
+        new_j_ts['upload_ts'] = str(datetime.now())
 
-        pope.write_to_json(file_name='../uploads/origin_results.json', jayson=[new_j_ts], mode='w')
-        pope.write_to_bq(table_name='results', file_name='../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        pope.write_to_json(file_name=f'{directory}/../uploads/origin_results.json', jayson=[new_j_ts], mode='w')
+        pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
         print(f"Successfully uploaded result time series for experiment {experiment_id}")
