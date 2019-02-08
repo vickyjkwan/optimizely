@@ -109,41 +109,44 @@ if __name__ == '__main__':
         # if '' then the experiment has not started yet
         if response_ts.text == '':
             j_ts = {'experiment_id': experiment_id}
+            new_j_ts = j_ts
+            new_j_ts['upload_ts'] = str(datetime.now())
+            
         else:
             j_ts = json.loads(response_ts.text)
 
-        new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
+            new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
 
-        flattened_metrics = []
-        for metric in new_j_ts['metrics']:
-            for result in metric['results']:
-                for timeseries in result['timeseries']:
-                    new_dict = {}
-                    new_dict['aggregator'] = metric['aggregator']
-                    new_dict['event_id'] = metric['event_id']
-                    new_dict['name'] = metric['name']
-                    new_dict['scope'] = metric['scope']
-                    new_dict['winning_direction'] = metric['winning_direction']
+            flattened_metrics = []
+            for metric in new_j_ts['metrics']:
+                for result in metric['results']:
+                    for timeseries in result['timeseries']:
+                        new_dict = {}
+                        new_dict['aggregator'] = metric['aggregator']
+                        new_dict['event_id'] = metric['event_id']
+                        new_dict['name'] = metric['name']
+                        new_dict['scope'] = metric['scope']
+                        new_dict['winning_direction'] = metric['winning_direction']
 
-                    new_dict['result_is_baseline'] = result['is_baseline']
-                    new_dict['result_level'] = result['level']
-                    new_dict['result_name'] = result['name']
-                    new_dict['result_variation_id'] = result['variation_id']
-                    new_dict['result_id'] = result['results_id']
-                    
-                    if 'rate' in timeseries.keys():
-                        new_dict['time_series_rate'] = timeseries['rate']
-                    else:
-                        pass
+                        new_dict['result_is_baseline'] = result['is_baseline']
+                        new_dict['result_level'] = result['level']
+                        new_dict['result_name'] = result['name']
+                        new_dict['result_variation_id'] = result['variation_id']
+                        new_dict['result_id'] = result['results_id']
                         
-                    new_dict['time_series_time'] = timeseries['time']
-                    new_dict['time_series_value'] = timeseries['value']
-                    new_dict['time_series_samples'] = timeseries['samples']
-                    new_dict['time_series_variance'] = timeseries['variance']
+                        if 'rate' in timeseries.keys():
+                            new_dict['time_series_rate'] = timeseries['rate']
+                        else:
+                            pass
+                            
+                        new_dict['time_series_time'] = timeseries['time']
+                        new_dict['time_series_value'] = timeseries['value']
+                        new_dict['time_series_samples'] = timeseries['samples']
+                        new_dict['time_series_variance'] = timeseries['variance']
 
-                    flattened_metrics.append(new_dict)
-        new_j_ts['metrics'] = flattened_metrics
-        new_j_ts['upload_ts'] = str(datetime.now())
+                        flattened_metrics.append(new_dict)
+            new_j_ts['metrics'] = flattened_metrics
+            new_j_ts['upload_ts'] = str(datetime.now())
 
         pope.write_to_json(file_name=f'{directory}/../uploads/origin_results.json', jayson=[new_j_ts], mode='w')
         pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
