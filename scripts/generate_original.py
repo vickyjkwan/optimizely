@@ -121,63 +121,25 @@ if __name__ == '__main__':
 
             new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
 
-            # flattened_metrics = []
-            # for metric in new_j_ts['metrics']:
-            #     if 'results' in metric.keys():
-            #         for result in metric['results']:
-            #             for timeseries in result['timeseries']:
-            #                 new_dict = {}
-            #                 new_dict['aggregator'] = metric['aggregator']
-                            
-            #                 if 'name' in metric.keys():
-            #                     new_dict['name'] = metric['name']
-            #                 else:
-            #                     None
-
-            #                 new_dict['scope'] = metric['scope']
-            #                 new_dict['winning_direction'] = metric['winning_direction']
-
-            #                 if 'event_id' in metric.keys():
-            #                     new_dict['event_id'] = metric['event_id']
-            #                 else:
-            #                     new_dict['field'] = metric['field']
-
-
-            #                 new_dict['result_is_baseline'] = result['is_baseline']
-            #                 new_dict['result_level'] = result['level']
-            #                 new_dict['result_name'] = result['name']
-            #                 new_dict['result_variation_id'] = result['variation_id']
-            #                 new_dict['result_id'] = result['results_id']
-
-            #                 if 'rate' in timeseries.keys():
-            #                     new_dict['time_series_rate'] = timeseries['rate']
-            #                 else:
-            #                     pass
-
-            #                 new_dict['time_series_time'] = timeseries['time']
-            #                 new_dict['time_series_value'] = timeseries['value']
-            #                 new_dict['time_series_samples'] = timeseries['samples']
-            #                 new_dict['time_series_variance'] = timeseries['variance']
-
-            #                 flattened_metrics.append(new_dict)
-                        
-            # new_j_ts['metrics'] = flattened_metrics
             flattened_metrics = []
             for metric in new_j_ts['metrics']:
-                for ts in metric['results']:
-                    flattened_timeseries = []
-                    for element in ts['timeseries']:
-                        element['upload_ts'] = str(datetime.now())
-                        flattened_timeseries.append(flatten(element, {}, ''))
+                if 'results' in metric.keys():
+                    for ts in metric['results']:
+                        flattened_timeseries = []
+                        for element in ts['timeseries']:
+                            element['upload_ts'] = str(datetime.now())
+                            flattened_timeseries.append(flatten(element, {}, ''))
 
-                    # Replace old 'timeseries' with new 'flattened_timeseries'
-                    updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
-                    flattened_results = flatten_dupe_vals(vals=updated_results, key='timeseries')
+                        # Replace old 'timeseries' with new 'flattened_timeseries'
+                        updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
+                        flattened_results = flatten_dupe_vals(vals=updated_results, key='timeseries')
 
-                # Replace old 'metrics' with new 'flattened_results'
-                update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
-                flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
-            
+                    # Replace old 'metrics' with new 'flattened_results'
+                    update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
+                    flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
+                    
+                else:
+                    flattened_metrics = flatten(new_j_ts, {}, '')
 
         # pope.write_to_json(file_name=f'{directory}/../uploads/origin_results.json', jayson=[new_j_ts], mode='w')
         # pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
