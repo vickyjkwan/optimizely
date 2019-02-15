@@ -3,7 +3,7 @@ import requests
 import popelines
 import os
 from datetime import datetime
-from main import flatten, fix_values
+from main import fix_values, populating_vals, flatten, flatten_dupe_vals
 
 
 # read endpoint, returns a json file of the HTTP request
@@ -47,11 +47,11 @@ def generate_projects(project_endpoint, project_headers):
 if __name__ == '__main__':
 
     ############################################### Keys and Authentication #######################################
-    if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
-        os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
+    # if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
+    #     os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
     gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
 
-    directory = str(os.path.abspath(os.path.dirname(__file__)))
+    # directory = str(os.path.abspath(os.path.dirname(__file__)))
 
     ############################################### Instantiating Popelines #######################################
     pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
@@ -70,8 +70,10 @@ if __name__ == '__main__':
     ############################################### generate and upload all projects ##############################
     all_projects = generate_projects(project_endpoint, headers)
     # upload projects 
-    pope.write_to_json(file_name=f'{directory}/../uploads/projects.json', jayson=all_projects, mode='w')
-    pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    # pope.write_to_json(file_name=f'{directory}/../uploads/projects.json', jayson=all_projects, mode='w')
+    # pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    pope.write_to_json(file_name='../uploads/projects.json', jayson=all_projects, mode='w')
+    pope.write_to_bq(table_name='projects', file_name='../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
     
 
     ############################################### generate and upload all experiments ###########################
@@ -95,8 +97,10 @@ if __name__ == '__main__':
         experiment_id_list.extend(exp_id_list)
 
         # upload experiments
-        pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments.json', jayson=exp_list, mode='w')
-        pope.write_to_bq(table_name='experiments', file_name=f'{directory}/../uploads/origin_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        # pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments.json', jayson=exp_list, mode='w')
+        # pope.write_to_bq(table_name='experiments', file_name=f'{directory}/../uploads/origin_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        pope.write_to_json(file_name='../uploads/origin_experiments.json', jayson=exp_list, mode='w')
+        pope.write_to_bq(table_name='experiments', file_name='../uploads/origin_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
         print(f"Successfully uploaded experiments for project {project_id}")
 
     
@@ -107,7 +111,7 @@ if __name__ == '__main__':
         response_ts = requests.get(result_endpoint, headers=headers)
         print(f"got experiment {experiment_id}")
         # if '' then the experiment has not started yet
-        if response_ts.text == '':
+        if response_ts.text == '' or 'bad' in response_ts.text:
             j_ts = {'experiment_id': experiment_id}
             new_j_ts = j_ts
             new_j_ts['upload_ts'] = str(datetime.now())
@@ -117,37 +121,66 @@ if __name__ == '__main__':
 
             new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
 
+            # flattened_metrics = []
+            # for metric in new_j_ts['metrics']:
+            #     if 'results' in metric.keys():
+            #         for result in metric['results']:
+            #             for timeseries in result['timeseries']:
+            #                 new_dict = {}
+            #                 new_dict['aggregator'] = metric['aggregator']
+                            
+            #                 if 'name' in metric.keys():
+            #                     new_dict['name'] = metric['name']
+            #                 else:
+            #                     None
+
+            #                 new_dict['scope'] = metric['scope']
+            #                 new_dict['winning_direction'] = metric['winning_direction']
+
+            #                 if 'event_id' in metric.keys():
+            #                     new_dict['event_id'] = metric['event_id']
+            #                 else:
+            #                     new_dict['field'] = metric['field']
+
+
+            #                 new_dict['result_is_baseline'] = result['is_baseline']
+            #                 new_dict['result_level'] = result['level']
+            #                 new_dict['result_name'] = result['name']
+            #                 new_dict['result_variation_id'] = result['variation_id']
+            #                 new_dict['result_id'] = result['results_id']
+
+            #                 if 'rate' in timeseries.keys():
+            #                     new_dict['time_series_rate'] = timeseries['rate']
+            #                 else:
+            #                     pass
+
+            #                 new_dict['time_series_time'] = timeseries['time']
+            #                 new_dict['time_series_value'] = timeseries['value']
+            #                 new_dict['time_series_samples'] = timeseries['samples']
+            #                 new_dict['time_series_variance'] = timeseries['variance']
+
+            #                 flattened_metrics.append(new_dict)
+                        
+            # new_j_ts['metrics'] = flattened_metrics
             flattened_metrics = []
             for metric in new_j_ts['metrics']:
-                for result in metric['results']:
-                    for timeseries in result['timeseries']:
-                        new_dict = {}
-                        new_dict['aggregator'] = metric['aggregator']
-                        new_dict['event_id'] = metric['event_id']
-                        new_dict['name'] = metric['name']
-                        new_dict['scope'] = metric['scope']
-                        new_dict['winning_direction'] = metric['winning_direction']
+                for ts in metric['results']:
+                    flattened_timeseries = []
+                    for element in ts['timeseries']:
+                        element['upload_ts'] = str(datetime.now())
+                        flattened_timeseries.append(flatten(element, {}, ''))
 
-                        new_dict['result_is_baseline'] = result['is_baseline']
-                        new_dict['result_level'] = result['level']
-                        new_dict['result_name'] = result['name']
-                        new_dict['result_variation_id'] = result['variation_id']
-                        new_dict['result_id'] = result['results_id']
-                        
-                        if 'rate' in timeseries.keys():
-                            new_dict['time_series_rate'] = timeseries['rate']
-                        else:
-                            pass
-                            
-                        new_dict['time_series_time'] = timeseries['time']
-                        new_dict['time_series_value'] = timeseries['value']
-                        new_dict['time_series_samples'] = timeseries['samples']
-                        new_dict['time_series_variance'] = timeseries['variance']
+                    # Replace old 'timeseries' with new 'flattened_timeseries'
+                    updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
+                    flattened_results = flatten_dupe_vals(vals=updated_results, key='timeseries')
 
-                        flattened_metrics.append(new_dict)
-            new_j_ts['metrics'] = flattened_metrics
-            new_j_ts['upload_ts'] = str(datetime.now())
+                # Replace old 'metrics' with new 'flattened_results'
+                update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
+                flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
+            
 
-        pope.write_to_json(file_name=f'{directory}/../uploads/origin_results.json', jayson=[new_j_ts], mode='w')
-        pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        # pope.write_to_json(file_name=f'{directory}/../uploads/origin_results.json', jayson=[new_j_ts], mode='w')
+        # pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        pope.write_to_json(file_name='../uploads/origin_results.json', jayson=flattened_metrics, mode='w')
+        pope.write_to_bq(table_name='results', file_name='../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
         print(f"Successfully uploaded result time series for experiment {experiment_id}")
