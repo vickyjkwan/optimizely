@@ -69,6 +69,7 @@ if __name__ == '__main__':
 
     ############################################### generate and upload all projects ##############################
     all_projects = generate_projects(project_endpoint, headers)
+    all_projects['upload_ts'] = str(datetime.now())
     # upload projects 
     # pope.write_to_json(file_name=f'{directory}/../uploads/projects.json', jayson=all_projects, mode='w')
     # pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
@@ -78,71 +79,71 @@ if __name__ == '__main__':
 
     ############################################### generate and upload all experiments ###########################
     # get a list of project_id from all_projects
-    project_id_list = []
-    for project in all_projects:
-        project_id_list.append(project['id'])
+    # project_id_list = []
+    # for project in all_projects:
+    #     project_id_list.append(project['id'])
 
-    # to accumulate all experiment_id, for 
-    experiment_id_list = []
+    # # to accumulate all experiment_id, for 
+    # experiment_id_list = []
 
-    # loop over all project_id_list to get experiments within each project
-    for project_id in project_id_list:
-        # params include project_id (required) and experiments pulling per each request (default only 25)
-        params = (
-            ('project_id', project_id),
-            ('per_page', 100),
-        ) 
+    # # loop over all project_id_list to get experiments within each project
+    # for project_id in project_id_list:
+    #     # params include project_id (required) and experiments pulling per each request (default only 25)
+    #     params = (
+    #         ('project_id', project_id),
+    #         ('per_page', 100),
+    #     ) 
 
-        exp_list, exp_id_list = generate_experiments(project_id, experiment_endpoint, headers, params)
-        experiment_id_list.extend(exp_id_list)
+    #     exp_list, exp_id_list = generate_experiments(project_id, experiment_endpoint, headers, params)
+    #     experiment_id_list.extend(exp_id_list)
 
-        # upload experiments
-        # pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments.json', jayson=exp_list, mode='w')
-        # pope.write_to_bq(table_name='experiments', file_name=f'{directory}/../uploads/origin_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        pope.write_to_json(file_name='../uploads/origin_experiments.json', jayson=exp_list, mode='w')
-        pope.write_to_bq(table_name='experiments', file_name='../uploads/origin_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        print(f"Successfully uploaded experiments for project {project_id}")
+    #     # upload experiments
+    #     # pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments.json', jayson=exp_list, mode='w')
+    #     # pope.write_to_bq(table_name='experiments', file_name=f'{directory}/../uploads/origin_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    #     pope.write_to_json(file_name='../uploads/origin_experiments.json', jayson=exp_list, mode='w')
+    #     pope.write_to_bq(table_name='experiments', file_name='../uploads/origin_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    #     print(f"Successfully uploaded experiments for project {project_id}")
 
     
-    ############################################### generate and upload all result time series ########################
-    # loop over all experiment_id in experiment_id_list from above
-    for experiment_id in experiment_id_list:
-        result_endpoint = f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries'
-        response_ts = requests.get(result_endpoint, headers=headers)
-        print(f"got experiment {experiment_id}")
-        # if '' then the experiment has not started yet
-        if response_ts.text == '' or 'bad' in response_ts.text:
-            j_ts = {'experiment_id': experiment_id}
-            new_j_ts = j_ts
-            new_j_ts['upload_ts'] = str(datetime.now())
+    # ############################################### generate and upload all result time series ########################
+    # # loop over all experiment_id in experiment_id_list from above
+    # for experiment_id in experiment_id_list:
+    #     result_endpoint = f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries'
+    #     response_ts = requests.get(result_endpoint, headers=headers)
+    #     print(f"got experiment {experiment_id}")
+    #     # if '' then the experiment has not started yet
+    #     if response_ts.text == '' or 'bad' in response_ts.text:
+    #         j_ts = {'experiment_id': experiment_id}
+    #         new_j_ts = j_ts
+    #         new_j_ts['upload_ts'] = str(datetime.now())
             
-        else:
-            j_ts = json.loads(response_ts.text)
+    #     else:
+    #         j_ts = json.loads(response_ts.text)
 
-            new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
+    #         new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
 
-            flattened_metrics = []
-            for metric in new_j_ts['metrics']:
-                if 'results' in metric.keys():
-                    for ts in metric['results']:
-                        flattened_timeseries = []
-                        for element in ts['timeseries']:
-                            element['upload_ts'] = str(datetime.now())
-                            flattened_timeseries.append(flatten(element, {}, ''))
+    #         flattened_metrics = []
+    #         for metric in new_j_ts['metrics']:
+    #             if 'results' in metric.keys():
+    #                 for ts in metric['results']:
+    #                     flattened_timeseries = []
+    #                     for element in ts['timeseries']:
+    #                         element['upload_ts'] = str(datetime.now())
+    #                         flattened_timeseries.append(flatten(element, {}, ''))
 
-                        # Replace old 'timeseries' with new 'flattened_timeseries'
-                        updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
-                        flattened_results = flatten_dupe_vals(vals=updated_results, key='timeseries')
+    #                     # Replace old 'timeseries' with new 'flattened_timeseries'
+    #                     updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
+    #                     flattened_results = flatten_dupe_vals(vals=updated_results, key='timeseries')
 
-                    # Replace old 'metrics' with new 'flattened_results'
-                    update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
-                    flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
+    #                 # Replace old 'metrics' with new 'flattened_results'
+    #                 update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
+    #                 flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
 
-                else:
-                    flattened_metrics = [flatten(new_j_ts, {}, '')]
+    #             else:
+    #                 flattened_metrics = [flatten(new_j_ts, {}, '')]
 
-        # pope.write_to_json(file_name=f'{directory}/../uploads/origin_results.json', jayson=[new_j_ts], mode='w')
-        # pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        pope.write_to_json(file_name='../uploads/origin_results.json', jayson=flattened_metrics, mode='w')
-        pope.write_to_bq(table_name='results', file_name='../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        print(f"Successfully uploaded result time series for experiment {experiment_id}")
+    #     # pope.write_to_json(file_name=f'{directory}/../uploads/origin_results.json', jayson=[new_j_ts], mode='w')
+    #     # pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    #     pope.write_to_json(file_name='../uploads/origin_results.json', jayson=flattened_metrics, mode='w')
+    #     pope.write_to_bq(table_name='results', file_name='../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    #     print(f"Successfully uploaded result time series for experiment {experiment_id}")
