@@ -137,9 +137,9 @@ if __name__ == '__main__':
                     # Replace old 'metrics' with new 'flattened_results'
                     update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
                     flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
-                    
+
                 else:
-                    flattened_metrics = flatten(new_j_ts, {}, '')
+                    flattened_metrics = [flatten(new_j_ts, {}, '')]
 
         # pope.write_to_json(file_name=f'{directory}/../uploads/origin_results.json', jayson=[new_j_ts], mode='w')
         # pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
