@@ -77,49 +77,40 @@ def generate_experiments(exp_list):
         metrics_table.extend(metric_list)
     
         # variations table:
+        variations = {}
+        variations['experiment_id'] = exp['id']
+        variations['variations'] = exp['variations']
 
-        variations_table = []
-        for exp in exp_list:
-            print(f"Processing experiment {exp['id']}")
+        flattened_variations = []
 
-            variations = {}
-            # for exp in exp_list:
+        for var in exp['variations']:
+            flattened_actions = []
+            if len(var['actions']) > 0:
+                for action in var['actions']:
+                    flattened_changes = []
+                    for element in action['changes']:
+                        flattened_changes.append(element)
+                    # Replace old 'changes' with new 'flattened_changes'
+                    updated_changes = populating_vals(outer_dict=action, inner_flattened_list=flattened_changes, destination_key='changes')
+                    new_flattened_changes = flatten_dupe_vals(vals=updated_changes, key='changes')
 
-            print(f"Processing experiment {exp['id']}")
-
-            variations['experiment_id'] = exp['id']
-            variations['variations'] = exp['variations']
-
-            flattened_variations = []
-
-            for var in exp['variations']:
-                flattened_actions = []
-                if len(var['actions']) > 0:
-                    for action in var['actions']:
-                        flattened_changes = []
-                        for element in action['changes']:
-                            flattened_changes.append(element)
-                        # Replace old 'changes' with new 'flattened_changes'
-                        updated_changes = populating_vals(outer_dict=action, inner_flattened_list=flattened_changes, destination_key='changes')
-                        new_flattened_changes = flatten_dupe_vals(vals=updated_changes, key='changes')
-
-                        update_actions = populating_vals(outer_dict=var, inner_flattened_list=new_flattened_changes, destination_key='actions')
-                        flat = flatten_dupe_vals(vals=update_actions, key='actions')
-                        flattened_actions.extend(flat)
-
-                else:
-                    other_flat = {}
-                    for k,v in var.items():
-                        if k != 'actions':
-                            other_flat['actions'] = []
-                            other_flat[k] = v
-                    flat = [other_flat]
+                    update_actions = populating_vals(outer_dict=var, inner_flattened_list=new_flattened_changes, destination_key='actions')
+                    flat = flatten_dupe_vals(vals=update_actions, key='actions')
                     flattened_actions.extend(flat)
 
-                update_variations = populating_vals(outer_dict=variations, inner_flattened_list=flattened_actions, destination_key='variations')
-                flattened_variations.extend(flatten_dupe_vals(vals=update_variations, key='variations'))
+            else:
+                other_flat = {}
+                for k,v in var.items():
+                    if k != 'actions':
+                        other_flat['actions'] = []
+                        other_flat[k] = v
+                flat = [other_flat]
+                flattened_actions.extend(flat)
 
-            variations_table.extend(flattened_variations)
+            update_variations = populating_vals(outer_dict=variations, inner_flattened_list=flattened_actions, destination_key='variations')
+            flattened_variations.extend(flatten_dupe_vals(vals=update_variations, key='variations'))
+
+        variations_table.extend(flattened_variations)
 
     return all_singles, metrics_table, variations_table
   
