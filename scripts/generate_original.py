@@ -27,135 +27,106 @@ def generate_projects(project_endpoint, project_headers):
     return j_proj
 
 
-if __name__ == '__main__':
+############################################### generate and upload all experiments ###########################
+def generate_experiments(exp_list):
+    ###### Game plan is to separate nested fields from single layer fields, upload them to separate table, then do joins on BQ level
+    all_singles = []
+    metrics_table = []
+    variations_table = []
 
-    ############################################### Keys and Authentication #######################################
-    if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
-        os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
-    gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
+    for exp in exp_list:
+        print(f"Processing experiment {exp['id']}")
 
-    directory = str(os.path.abspath(os.path.dirname(__file__)))
+        # single layer fields:
+        nested_key_list = []
+        for k,v in exp.items():
+            if isinstance(v, list) or isinstance(v, dict):
+                nested_key_list.append(k)
+        
+        single_layer_experiment = {}    
+        for k,v in exp.items():
+            if k not in nested_key_list:
+                k = k.replace('-', '_')
+                single_layer_experiment[k] = exp[k]
+        single_layer_experiment['upload_ts'] = str(datetime.now())
 
-    ############################################### Instantiating Popelines #######################################
-    pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
+        all_singles.append(flatten(single_layer_experiment, {}, ''))
 
-    # Optimizely parameters
-    headers = {
-        'Authorization': 'Bearer 2:EWAWmaXb4TgtYVU2VvwoEF-9UbJxBahkiFh1633_Oc9nmju7iJis',
-    }
+        # nested part into separate tables:
+        # metrics table:
 
-    # endpoints
-    project_endpoint = 'https://api.optimizely.com/v2/projects'
-    experiment_endpoint = 'https://api.optimizely.com/v2/experiments'
+        flattened_metric = []
+        for element in exp['metrics']:
+            flattened_metric.append(element)
 
+        updated_metric = populating_vals(outer_dict=exp, inner_flattened_list=flattened_metric, destination_key='metrics')
+        new_flattened_metric = flatten_dupe_vals(vals=updated_metric, key='metrics')
 
-    ############################################### generate and upload all projects ##############################
-    all_projects = generate_projects(project_endpoint, headers)
-    for project in all_projects:
-        project['upload_ts'] = str(datetime.now())
+        metric_list = []
+        for metric in new_flattened_metric:
+            metric_dict = {}
+            metric_dict['metrics_aggregator'] = metric['metrics_aggregator']
+            if 'metrics_event_id' in metric.keys():
+                metric_dict['metrics_event_id'] = metric['metrics_event_id']
+            metric_dict['metrics_scope'] =  metric['metrics_scope']
+            metric_dict['metrics_winning_direction'] = metric['metrics_winning_direction']
+            metric_dict['experiment_id'] = exp['id']
+            metric_dict['upload_ts'] = str(datetime.now())
+            metric_list.append(metric_dict)
 
-    # upload projects 
-    pope.write_to_json(file_name=f'{directory}/../uploads/projects.json', jayson=all_projects, mode='w')
-    pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        metrics_table.extend(metric_list)
+    
+        # variations table:
 
-
-    ############################################### generate and upload all experiments ###########################
-    # get a list of project_id from all_projects
-    project_id_list = []
-    for project in all_projects:
-        project_id_list.append(project['id'])
-
-    # to accumulate all experiment_id, for 
-    experiment_id_list = []
-
-    # loop over all project_id_list to get experiments within each project
-    for project_id in project_id_list:
-        # params include project_id (required) and experiments pulling per each request (default only 25)
-        params = (
-            ('project_id', project_id),
-            ('per_page', 100),
-        ) 
-
-        exp_list = read_endpoint(endpoint=experiment_endpoint, headers_set=headers, params_set=params)
-        exp_id_list = []
+        variations_table = []
         for exp in exp_list:
-            exp_id_list.append(exp['id'])
-        experiment_id_list.extend(exp_id_list)
+            print(f"Processing experiment {exp['id']}")
 
-        ###### Game plan is to separate nested fields from single layer fields, upload them to separate table, then do joins on BQ level
-        expanded_exp_list = []
-        all_singles = []
+            variations = {}
+            # for exp in exp_list:
 
-        for exp in exp_list:
-            print(f"Processing experiment {exp['id']}, of project {project_id}")
+            print(f"Processing experiment {exp['id']}")
 
-            # single layer fields:
-            nested_key_list = []
-            for k,v in exp.items():
-                if isinstance(v, list) or isinstance(v, dict):
-                    nested_key_list.append(k)
-            
-            single_layer_experiment = {}    
-            for k,v in exp.items():
-                if k not in nested_key_list:
-                    k = k.replace('-', '_')
-                    single_layer_experiment[k] = exp[k]
+            variations['experiment_id'] = exp['id']
+            variations['variations'] = exp['variations']
 
-            all_singles.append(single_layer_experiment)
-
-            # nested part into separate tables:
-            expanded_exp = {}
-            
-            expanded_exp['experiment_id'] = exp['id']
-            expanded_exp['changes'] = exp['changes']
-
-            expanded_metrics = {}
-            expanded_metrics['experiment_id'] = exp['id']
-            expanded_metrics['metrics'] = exp['metrics']
-            expanded_exp['metrics'] = flatten_dupe_vals(vals=expanded_metrics, key='metrics')
-
-            if 'url_targeting' in exp.keys():
-                expanded_exp['experiment_id'] = exp['id']
-                expanded_exp['url_targeting'] = exp['url_targeting']
-                expanded_exp = flatten(expanded_exp, {}, '')
-            
-            expanded_exp['experiment_id'] = exp['id']
-            expanded_exp['variations'] = exp['variations']
-            
             flattened_variations = []
-            
-            for var in expanded_exp['variations']:
+
+            for var in exp['variations']:
                 flattened_actions = []
-                for action in var['actions']:
-                    flattened_changes = []
-                    for element in action['changes']:
-                        flattened_changes.append(element)
+                if len(var['actions']) > 0:
+                    for action in var['actions']:
+                        flattened_changes = []
+                        for element in action['changes']:
+                            flattened_changes.append(element)
+                        # Replace old 'changes' with new 'flattened_changes'
+                        updated_changes = populating_vals(outer_dict=action, inner_flattened_list=flattened_changes, destination_key='changes')
+                        new_flattened_changes = flatten_dupe_vals(vals=updated_changes, key='changes')
 
-                    # Replace old 'timeseries' with new 'flattened_timeseries'
-                    updated_changes = populating_vals(outer_dict=action, inner_flattened_list=flattened_changes, destination_key='changes')
-                    new_flattened_changes = flatten_dupe_vals(vals=updated_changes, key='changes')
+                        update_actions = populating_vals(outer_dict=var, inner_flattened_list=new_flattened_changes, destination_key='actions')
+                        flat = flatten_dupe_vals(vals=update_actions, key='actions')
+                        flattened_actions.extend(flat)
 
-                update_actions = populating_vals(outer_dict=var, inner_flattened_list=new_flattened_changes, destination_key='actions')
-                flattened_actions.extend(flatten_dupe_vals(vals=update_actions, key='actions'))  
+                else:
+                    other_flat = {}
+                    for k,v in var.items():
+                        if k != 'actions':
+                            other_flat['actions'] = []
+                            other_flat[k] = v
+                    flat = [other_flat]
+                    flattened_actions.extend(flat)
 
-            update_variations = populating_vals(outer_dict=expanded_exp, inner_flattened_list=flattened_actions, destination_key='variations')
-            flattened_variations.extend(flatten_dupe_vals(vals=update_variations, key='variations'))
-            
-            expanded_variations = flattened_variations
-            
-            expanded_exp = expanded_variations
-            expanded_exp_list.extend(expanded_exp)
+                update_variations = populating_vals(outer_dict=variations, inner_flattened_list=flattened_actions, destination_key='variations')
+                flattened_variations.extend(flatten_dupe_vals(vals=update_variations, key='variations'))
 
-        pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_single_fields.json', jayson=all_singles, mode='w')
-        pope.write_to_bq(table_name='origin_experiments_single_fields', file_name=f'{directory}/../uploads/origin_experiments_single_fields.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        print(f"Successfully uploaded single layer part for experiment {exp['id']}")  
+            variations_table.extend(flattened_variations)
 
-        pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_nested_fields.json', jayson=expanded_exp_list, mode='w')
-        pope.write_to_bq(table_name='origin_experiments_nested_fields', file_name=f'{directory}/../uploads/origin_experiments_nested_fields.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        print(f"Successfully uploaded nested part for experiment {exp['id']}")    
+    return all_singles, metrics_table, variations_table
+  
 
 
-    ############################################### generate and upload all result time series ########################
+############################################### generate and upload all result time series ########################
+def generate_results():  
     # loop over all experiment_id in experiment_id_list from above
     for experiment_id in experiment_id_list:
         result_endpoint = f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries'
@@ -201,3 +172,79 @@ if __name__ == '__main__':
         pope.write_to_json(file_name=f'{directory}/../uploads/origin_results.json', jayson=flattened_j_ts, mode='w')
         pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
         print(f"Successfully uploaded result time series for experiment {experiment_id}")
+
+if __name__ == '__main__':
+
+    ############################################### Keys and Authentication #######################################
+    if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
+        os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
+    gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
+
+    directory = str(os.path.abspath(os.path.dirname(__file__)))
+
+    ############################################### Instantiating Popelines #######################################
+    pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
+
+    # Optimizely parameters
+    headers = {
+        'Authorization': 'Bearer 2:EWAWmaXb4TgtYVU2VvwoEF-9UbJxBahkiFh1633_Oc9nmju7iJis',
+    }
+
+    # endpoints
+    project_endpoint = 'https://api.optimizely.com/v2/projects'
+    experiment_endpoint = 'https://api.optimizely.com/v2/experiments'
+
+
+    ############################################### generate and upload all projects ##############################
+    all_projects = generate_projects(project_endpoint, headers)
+    for project in all_projects:
+        project['upload_ts'] = str(datetime.now())
+
+    # upload projects 
+    pope.write_to_json(file_name=f'{directory}/../uploads/projects.json', jayson=all_projects, mode='w')
+    pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+
+
+    ############################################### generate and upload all experiments ##############################
+    # get a list of project_id from all_projects
+    project_id_list = []
+    for project in all_projects:
+        project_id_list.append(project['id'])
+
+    # to accumulate all experiment_id, for 
+    experiment_id_list = []
+
+    # loop over all project_id_list to get experiments within each project
+    for project_id in project_id_list:
+        # params include project_id (required) and experiments pulling per each request (default only 25)
+        params = (
+            ('project_id', project_id),
+            ('per_page', 100),
+        ) 
+
+        exp_list = read_endpoint(endpoint=experiment_endpoint, headers_set=headers, params_set=params)
+        exp_id_list = []
+        for exp in exp_list:
+            exp_id_list.append(exp['id'])
+        experiment_id_list.extend(exp_id_list)
+
+    all_singles, metrics_table, variations_table = generate_experiments(exp_list)
+
+    pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_single_fields.json', jayson=all_singles, mode='w')
+    pope.write_to_bq(table_name='origin_experiments_single_fields', file_name=f'{directory}/../uploads/origin_experiments_single_fields.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    print(f"Successfully uploaded single layer part for experiment {exp['id']}")  
+
+    pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_metrics_table.json', jayson=metrics_table, mode='w')
+    pope.write_to_bq(table_name='origin_experiments_metrics_table', file_name=f'{directory}/../uploads/origin_experiments_metrics_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    print(f"Successfully uploaded nested part for experiment {exp['id']}")  
+
+    pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_variations_table.json', jayson=variations_table, mode='w')
+    pope.write_to_bq(table_name='origin_experiments_variations_table', file_name=f'{directory}/../uploads/origin_experiments_variations_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    print(f"Successfully uploaded nested part for experiment {exp['id']}") 
+    
+
+    ############################################### generate and upload all experiments ##############################
+    # generate_results()
+
+
+    
