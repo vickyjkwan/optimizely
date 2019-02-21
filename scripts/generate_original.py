@@ -85,29 +85,27 @@ def generate_experiments(exp_list):
 
         for var in exp['variations']:
             flattened_actions = []
+
             if len(var['actions']) > 0:
-                for action in var['actions']:
-                    flattened_changes = []
-                    for element in action['changes']:
-                        flattened_changes.append(element)
-                    # Replace old 'changes' with new 'flattened_changes'
-                    updated_changes = populating_vals(outer_dict=action, inner_flattened_list=flattened_changes, destination_key='changes')
-                    new_flattened_changes = flatten_dupe_vals(vals=updated_changes, key='changes')
-
-                update_actions = populating_vals(outer_dict=var, inner_flattened_list=new_flattened_changes, destination_key='actions')
-                flat = flatten_dupe_vals(vals=update_actions, key='actions')
                 
-                flattened_actions.extend(flat)
+                for action in var['actions']:
+                    
+                    flattened_changes = []
+                    
+                    if action['changes'] != []:
+                        for element in action['changes']:
+                            flattened_changes.append(element)
+                        # Replace old 'changes' with new 'flattened_changes'
+                        updated_changes = populating_vals(outer_dict=action, inner_flattened_list=flattened_changes, destination_key='changes')
+                        new_flattened_changes = flatten_dupe_vals(vals=updated_changes, key='changes')
 
-            else:
-                other_flat = {}
-                for k,v in var.items():
-                    if k != 'actions':
-                        other_flat['actions'] = []
-                        other_flat[k] = v
-                flat = [other_flat]
-            
-                flattened_actions.extend(flat)
+                        update_actions = populating_vals(outer_dict=var, inner_flattened_list=new_flattened_changes, destination_key='actions')
+                        flat = flatten_dupe_vals(vals=update_actions, key='actions')
+                        flattened_actions.extend(flat)
+                        
+                    else:
+                        new_actions = flatten_dupe_vals(vals=var, key='actions')
+                        flattened_actions.extend(new_actions)
 
             update_variations = populating_vals(outer_dict=variations, inner_flattened_list=flattened_actions, destination_key='variations')
             flattened_variations.extend(flatten_dupe_vals(vals=update_variations, key='variations'))
@@ -116,7 +114,6 @@ def generate_experiments(exp_list):
 
     return all_singles, metrics_table, variations_table
   
-
 
 ############################################### generate and upload all result time series ########################
 def generate_results():  

@@ -18,8 +18,11 @@ def flatten(jayson, acc, prefix):
             if isinstance(v, dict):
                 flatten(v, acc, prefix_k)
             elif isinstance(v, list):
+                # if v != []:
                 for j in v:
                     flatten(j, acc, prefix_k)
+                # else:
+                #     acc[prefix_k] = v
             else:
                 acc[prefix_k] = v
         return acc 
