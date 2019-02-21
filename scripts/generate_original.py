@@ -40,7 +40,7 @@ def generate_experiments(exp_list):
         # single layer fields:
         nested_key_list = []
         for k,v in exp.items():
-            if isinstance(v, list) or isinstance(v, dict):
+            if isinstance(v, list):
                 nested_key_list.append(k)
         
         single_layer_experiment = {}    
@@ -84,14 +84,13 @@ def generate_experiments(exp_list):
         flattened_variations = []
 
         for var in exp['variations']:
-            flattened_actions = []
-
+            flattened_actions = []  
+            
             if len(var['actions']) > 0:
-                
                 for action in var['actions']:
-                    
+
                     flattened_changes = []
-                    
+
                     if action['changes'] != []:
                         for element in action['changes']:
                             flattened_changes.append(element)
@@ -102,10 +101,19 @@ def generate_experiments(exp_list):
                         update_actions = populating_vals(outer_dict=var, inner_flattened_list=new_flattened_changes, destination_key='actions')
                         flat = flatten_dupe_vals(vals=update_actions, key='actions')
                         flattened_actions.extend(flat)
-                        
+
                     else:
                         new_actions = flatten_dupe_vals(vals=var, key='actions')
                         flattened_actions.extend(new_actions)
+                    
+            else:
+                other_flat = {}
+                for k,v in var.items():
+                    if k != 'actions':
+                        other_flat['actions'] = []
+                        other_flat[k] = v
+                flat = [other_flat]
+                flattened_actions.extend(flat)
 
             update_variations = populating_vals(outer_dict=variations, inner_flattened_list=flattened_actions, destination_key='variations')
             flattened_variations.extend(flatten_dupe_vals(vals=update_variations, key='variations'))
