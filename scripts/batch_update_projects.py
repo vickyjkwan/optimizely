@@ -29,7 +29,8 @@ def check_api_ts(api_path, table, ts_col, benchmark_ts):
         pass
 
     for entity in all_existing:
-        if datetime.strptime(entity[ts_col], '%Y-%m-%dT%H:%M:%S.%fz') > benchmark_ts:
+        entity_ts = datetime.strptime(entity[ts_col], '%Y-%m-%dT%H:%M:%S.%fz') + timedelta(hours=-8)
+        if  entity_ts > benchmark_ts:
             updating_entity_id.append(entity['id'])
 
     return updating_entity_id
@@ -76,7 +77,7 @@ if __name__ == '__main__':
     project_endpoint = 'https://api.optimizely.com/v2/projects'
 
     # get the timestamp from bq for project table, at which the job was most recently run
-    last_upload_ts = check_bq_ts('projects', 'upload_ts')
+    last_upload_ts = check_bq_ts('update_projects', 'upload_ts')
 
     # get projects with last_modified timestamps that are later than the previous ts
     # getting ready to upload
