@@ -21,7 +21,7 @@ def read_endpoint(endpoint, headers_set, params_set=None):
 
 # generate all projects within account
 def generate_projects(project_endpoint, project_headers):
-    # get all projects
+
     j_proj = read_endpoint(endpoint=project_endpoint, headers_set=project_headers)
 
     return j_proj
@@ -48,7 +48,7 @@ def generate_experiments(exp_list):
             if k not in nested_key_list:
                 k = k.replace('-', '_')
                 single_layer_experiment[k] = exp[k]
-        single_layer_experiment['upload_ts'] = str(datetime.now())
+        single_layer_experiment['upload_ts'] = str(datetime.utcnow())
 
         all_singles.append(flatten(single_layer_experiment, {}, ''))
 
@@ -71,7 +71,7 @@ def generate_experiments(exp_list):
             metric_dict['metrics_scope'] =  metric['metrics_scope']
             metric_dict['metrics_winning_direction'] = metric['metrics_winning_direction']
             metric_dict['experiment_id'] = exp['id']
-            metric_dict['upload_ts'] = str(datetime.now())
+            metric_dict['upload_ts'] = str(datetime.utcnow())
             metric_list.append(metric_dict)
 
         metrics_table.extend(metric_list)
@@ -134,7 +134,7 @@ def generate_results(experiment_id_list):
         if response_ts.text == '' or 'bad' in response_ts.text:
             j_ts = {'experiment_id': experiment_id}
             new_j_ts = j_ts
-            new_j_ts['upload_ts'] = str(datetime.now())
+            new_j_ts['upload_ts'] = str(datetime.utcnow())
             
         else:
             j_ts = json.loads(response_ts.text)
@@ -150,7 +150,7 @@ def generate_results(experiment_id_list):
                     for ts in metric['results']:
                         flattened_timeseries = []
                         for element in ts['timeseries']:
-                            element['upload_ts'] = str(datetime.now())
+                            element['upload_ts'] = str(datetime.utcnow())
                             flattened_timeseries.append(flatten(element, {}, ''))
 
                         # Replace old 'timeseries' with new 'flattened_timeseries'
@@ -196,38 +196,37 @@ if __name__ == '__main__':
     ############################################### generate and upload all projects ##############################
     all_projects = generate_projects(project_endpoint, headers)
     for project in all_projects:
-        project['upload_ts'] = str(datetime.now())
+        project['upload_ts'] = str(datetime.utcnow())
 
     # upload projects 
-    # pope.write_to_json(file_name='../uploads/projects.json', jayson=all_projects, mode='w')
-    # pope.write_to_bq(table_name='projects', file_name='../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    pope.write_to_json(file_name='../uploads/projects.json', jayson=all_projects, mode='w')
+    pope.write_to_bq(table_name='projects', file_name='../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
 
 
     ############################################### generate and upload all experiments ##############################
     # get a list of project_id from all_projects
-    project_id_list = []
-    for project in all_projects:
-        project_id_list.append(project['id'])
+    # project_id_list = []
+    # for project in all_projects:
+    #     project_id_list.append(project['id'])
 
-    # to accumulate all experiment_id, for 
-    experiment_id_list = []
-    origin_single_table = []
-    origin_metrics_table = []
-    origin_variations_table = []
+    # experiment_id_list = []
+    # origin_single_table = []
+    # origin_metrics_table = []
+    # origin_variations_table = []
 
     # loop over all project_id_list to get experiments within each project
-    for project_id in project_id_list:
-        # params include project_id (required) and experiments pulling per each request (default only 25)
-        params = (
-            ('project_id', project_id),
-            ('per_page', 100),
-        ) 
+    # for project_id in project_id_list:
+    #     # params include project_id (required) and experiments pulling per each request (default only 25)
+    #     params = (
+    #         ('project_id', project_id),
+    #         ('per_page', 100),
+    #     ) 
 
-        exp_list = read_endpoint(endpoint=experiment_endpoint, headers_set=headers, params_set=params)
-        exp_id_list = []
-        for exp in exp_list:
-            exp_id_list.append(exp['id'])
-        experiment_id_list.extend(exp_id_list)
+    #     exp_list = read_endpoint(endpoint=experiment_endpoint, headers_set=headers, params_set=params)
+    #     exp_id_list = []
+    #     for exp in exp_list:
+    #         exp_id_list.append(exp['id'])
+    #     experiment_id_list.extend(exp_id_list)
 
     #     all_singles, metrics_table, variations_table = generate_experiments(exp_list)
     #     origin_single_table.extend(all_singles)
@@ -249,7 +248,7 @@ if __name__ == '__main__':
 
     ############################################### generate and upload all experiments ##############################
 
-    generate_results(experiment_id_list)
+    # generate_results(experiment_id_list)
 
 
     

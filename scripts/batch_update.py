@@ -2,10 +2,55 @@ import json
 import requests
 import popelines
 import os
-from main import flatten, fix_values
-from generate_original import read_endpoint, generate_experiments, generate_projects
+from datetime import datetime, timedelta
+from main import fix_values, populating_vals, flatten, flatten_dupe_vals
+from generate_original import read_endpoint, generate_projects
 
-def main():
+
+
+# this function checks the last time a job was run on bq,
+# returns the last-run timestamp for the table
+def check_bq_ts(table_name, ts_col_name):
+    last_upload_ts = pope.find_last_entry(table_name, ts_col_name) + timedelta(hours=-8)
+    return last_upload_ts
+
+
+# this function should get timestamp for each entity (project, experiment, or result), from API,
+# returns only those with a timestamp that is later than the benchmark, benchmark_ts
+def check_api_ts(api_path, table, ts_col, benchmark_ts):
+    
+    # compare each of the project's last_modified timestamp to the above last upload_ts
+    # select only if last_modified > upload_ts
+    updating_entity_id = []
+    if table == 'project':
+        all_existing = generate_projects(api_path, headers)
+    # elif table == 'experiment':
+    #     all_existing = generate_experiment(api_path, headers)
+    else:
+        pass
+
+    for entity in all_existing:
+        if datetime.strptime(entity[ts_col], '%Y-%m-%dT%H:%M:%S.%fz') > benchmark_ts:
+            updating_entity_id.append(entity['id'])
+
+    return updating_entity_id
+
+
+
+def generate_new_entity(id_list, api_path, table):
+    for entity_id in id_list:
+        if table == 'project':
+            entity_info = generate_projects(f'{api_path}/{entity_id}', headers)
+            entity_info['upload_ts'] = str(datetime.utcnow())
+
+        # need to add experiment table
+        else:
+            pass
+    
+    return entity_info
+
+
+if __name__ == '__main__':
     
     if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
         os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
@@ -13,41 +58,30 @@ def main():
 
     directory = str(os.path.abspath(os.path.dirname(__file__)))
 
+    pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
     headers = {
         'Authorization': 'Bearer 2:EWAWmaXb4TgtYVU2VvwoEF-9UbJxBahkiFh1633_Oc9nmju7iJis',
     }
 
-    # endpoints
+    ######################### updating projects #########################
+    # idea is to:
+    # GET [project_id, last_modified_ts]
+    # if new_project_id is not in {project_id} set: add to it
+    # if new_project_id is in {project_id} set: 
+        # if last_modified_ts > bq.last_modified_ts: add [project_id, project_props, last_modified_ts(new), upload_ts]
+        # else: do nothing
+
     project_endpoint = 'https://api.optimizely.com/v2/projects'
-    experiment_endpoint = 'https://api.optimizely.com/v2/experiments'
 
-    all_projects = generate_projects(project_endpoint, headers)
+    # get the timestamp from bq for project table, at which the job was most recently run
+    last_upload_ts = check_bq_ts('projects', 'upload_ts')
 
-    project_id_list = []
-    for project in all_projects:
-        project_id_list.append(project['id'])
+    # get projects with last_modified timestamps that are later than the previous ts
+    # getting ready to upload
+    updating_projects = check_api_ts(api_path=project_endpoint, table='project', ts_col='last_modified', benchmark_ts=last_upload_ts.replace(tzinfo=None))
+    updating_projects_json = generate_new_entity(id_list=updating_projects, api_path='https://api.optimizely.com/v2/projects', table='project')
 
-    for project_id in project_id_list:
-        # params include project_id (required) and experiments pulling per each request (default only 25)
-        params = (
-            ('project_id', project_id),
-            ('per_page', 100),
-        ) 
-
-        new_exp = []
-        exp_list, exp_id_list = generate_experiments(project_id, experiment_endpoint, headers, params)
-        for exp in exp_list:
-            # if experiment was created at a timestamp that is later than last upload, record id
-            if exp['created'] >= '2018-10-23T17:48:46.952180Z':
-                new_exp.append(exp)
-        
-        pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
-        pope.write_to_json(file_name='../uploads/new_experiments.json', jayson=new_exp, mode='w')
-        pope.write_to_bq(table_name='new_experiments_test', file_name='../uploads/new_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        print(f"Successfully uploaded new experiments for project {project_id}")
-
-
-if __name__ == '__main__':
-    main()
+    print(updating_projects_json)
+    
 
 
