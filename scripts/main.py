@@ -30,7 +30,7 @@ def flatten(jayson, acc, prefix):
         return acc
 
 
-########################### functions not in use #######################################
+# helper function to be used with popelines
 def fix_values(value, key, reset_key):
     if key == reset_key:
         new_list = []
