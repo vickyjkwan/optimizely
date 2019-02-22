@@ -7,7 +7,6 @@ from main import fix_values, populating_vals, flatten, flatten_dupe_vals
 from generate_original import read_endpoint, generate_projects
 
 
-
 # this function checks the last time a job was run on bq,
 # returns the last-run timestamp for the table
 def check_bq_ts(table_name, ts_col_name):
@@ -36,8 +35,9 @@ def check_api_ts(api_path, table, ts_col, benchmark_ts):
     return updating_entity_id
 
 
-
+# this function gathers all new entity dictionaries in a list, returns a format that is friendly to popelines
 def generate_new_entity(id_list, api_path, table):
+    new_json = []
     for entity_id in id_list:
         if table == 'project':
             entity_info = generate_projects(f'{api_path}/{entity_id}', headers)
@@ -46,8 +46,10 @@ def generate_new_entity(id_list, api_path, table):
         # need to add experiment table
         else:
             pass
-    
-    return entity_info
+
+        new_json.append(entity_info)
+
+    return new_json
 
 
 if __name__ == '__main__':
@@ -81,7 +83,11 @@ if __name__ == '__main__':
     updating_projects = check_api_ts(api_path=project_endpoint, table='project', ts_col='last_modified', benchmark_ts=last_upload_ts.replace(tzinfo=None))
     updating_projects_json = generate_new_entity(id_list=updating_projects, api_path='https://api.optimizely.com/v2/projects', table='project')
 
-    print(updating_projects_json)
+    # send to bq
+    pope.write_to_json(file_name='../uploads/update_projects.json', jayson=updating_projects_json, mode='w')
+    pope.write_to_bq(table_name='update_projects', file_name='../uploads/update_projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    print(f"Successfully uploaded updated info for projects.")  
+
     
 
 
