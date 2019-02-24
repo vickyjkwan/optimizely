@@ -69,7 +69,7 @@ if __name__ == '__main__':
     ######################### updating projects #########################
     # idea is to:
     # GET [project_id, last_modified_ts]
-    # if new_project_id is not in {project_id} set: add to it
+    # if new_project_id is not in {project_id} set: right now PD limit creation of new projects, therefore, this step is omitted
     # if new_project_id is in {project_id} set: 
         # if last_modified_ts > bq.last_modified_ts: add [project_id, project_props, last_modified_ts(new), upload_ts]
         # else: do nothing
