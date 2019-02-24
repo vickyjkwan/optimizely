@@ -77,7 +77,7 @@ if __name__ == '__main__':
     project_endpoint = 'https://api.optimizely.com/v2/projects'
 
     # get the timestamp from bq for project table, at which the job was most recently run
-    last_upload_ts = check_bq_ts('update_projects', 'upload_ts')
+    last_upload_ts = check_bq_ts('projects', 'upload_ts')
 
     # get projects with last_modified timestamps that are later than the previous ts
     # getting ready to upload
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     # send to bq
     pope.write_to_json(file_name=f'{directory}/../uploads/update_projects.json', jayson=updating_projects_json, mode='w')
-    pope.write_to_bq(table_name='update_projects', file_name=f'{directory}/../uploads/update_projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/update_projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
     print(f"Successfully uploaded updated info for projects.")  
 
     
