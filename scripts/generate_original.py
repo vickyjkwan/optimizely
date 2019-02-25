@@ -135,6 +135,8 @@ def generate_results(experiment_id_list):
             j_ts = {'experiment_id': experiment_id}
             new_j_ts = j_ts
             new_j_ts['upload_ts'] = str(datetime.utcnow())
+            pope.write_to_json(file_name='../uploads/no_results.json', jayson=[new_j_ts], mode='w')
+            pope.write_to_bq(table_name='results', file_name='../uploads/no_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
             
         else:
             j_ts = json.loads(response_ts.text)
@@ -142,20 +144,22 @@ def generate_results(experiment_id_list):
             new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
 
             flattened_j_ts = []
-
             flattened_metrics = []
+
             for metric in new_j_ts['metrics']:
+                
                 if 'results' in metric.keys():
-                    flattened_results = []
                     for ts in metric['results']:
-                        flattened_timeseries = []
+                        flattened_results = []
+
                         for element in ts['timeseries']:
+                            flattened_timeseries = []
                             element['upload_ts'] = str(datetime.utcnow())
                             flattened_timeseries.append(flatten(element, {}, ''))
 
-                        # Replace old 'timeseries' with new 'flattened_timeseries'
-                        updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
-                        flattened_results.extend(flatten_dupe_vals(vals=updated_results, key='timeseries'))
+                            # Replace old 'timeseries' with new 'flattened_timeseries'
+                            updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
+                            flattened_results.extend(flatten_dupe_vals(vals=updated_results, key='timeseries'))
 
                     # Replace old 'metrics' with new 'flattened_results'
                     update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
@@ -163,13 +167,13 @@ def generate_results(experiment_id_list):
 
                 else:
                     flattened_metrics = [flatten(new_j_ts, {}, '')]
-                
+            
             update_new_j_ts = populating_vals(outer_dict=new_j_ts, inner_flattened_list=flattened_metrics, destination_key='metrics')
             flattened_j_ts.extend(flatten_dupe_vals(vals=update_new_j_ts, key='metrics'))
 
-        pope.write_to_json(file_name='../uploads/origin_results.json', jayson=flattened_j_ts, mode='w')
-        pope.write_to_bq(table_name='results', file_name='../uploads/origin_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        print(f"Successfully uploaded result time series for experiment {experiment_id}")
+            pope.write_to_json(file_name='../uploads/results.json', jayson=flattened_j_ts, mode='w')
+            pope.write_to_bq(table_name='results', file_name='../uploads/results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+            print(f"Successfully uploaded result time series for experiment {experiment_id}")
 
 if __name__ == '__main__':
 
@@ -205,28 +209,28 @@ if __name__ == '__main__':
 
     ############################################### generate and upload all experiments ##############################
     # get a list of project_id from all_projects
-    # project_id_list = []
-    # for project in all_projects:
-    #     project_id_list.append(project['id'])
+    project_id_list = []
+    for project in all_projects:
+        project_id_list.append(project['id'])
 
-    # experiment_id_list = []
-    # origin_single_table = []
-    # origin_metrics_table = []
-    # origin_variations_table = []
+    experiment_id_list = []
+    origin_single_table = []
+    origin_metrics_table = []
+    origin_variations_table = []
 
     # loop over all project_id_list to get experiments within each project
-    # for project_id in project_id_list:
-    #     # params include project_id (required) and experiments pulling per each request (default only 25)
-    #     params = (
-    #         ('project_id', project_id),
-    #         ('per_page', 100),
-    #     ) 
+    for project_id in project_id_list:
+        # params include project_id (required) and experiments pulling per each request (default only 25)
+        params = (
+            ('project_id', project_id),
+            ('per_page', 100),
+        ) 
 
-    #     exp_list = read_endpoint(endpoint=experiment_endpoint, headers_set=headers, params_set=params)
-    #     exp_id_list = []
-    #     for exp in exp_list:
-    #         exp_id_list.append(exp['id'])
-    #     experiment_id_list.extend(exp_id_list)
+        exp_list = read_endpoint(endpoint=experiment_endpoint, headers_set=headers, params_set=params)
+        exp_id_list = []
+        for exp in exp_list:
+            exp_id_list.append(exp['id'])
+        experiment_id_list.extend(exp_id_list)
 
     #     all_singles, metrics_table, variations_table = generate_experiments(exp_list)
     #     origin_single_table.extend(all_singles)
@@ -248,7 +252,7 @@ if __name__ == '__main__':
 
     ############################################### generate and upload all experiments ##############################
 
-    # generate_results(experiment_id_list)
+    generate_results(experiment_id_list)
 
 
     
