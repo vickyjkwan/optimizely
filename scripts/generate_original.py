@@ -124,56 +124,37 @@ def generate_experiments(exp_list):
   
 
 ############################################### generate and upload all result time series ########################
-def generate_results(experiment_id_list):  
-    # loop over all experiment_id in experiment_id_list from above
-    for experiment_id in experiment_id_list:
-        result_endpoint = f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries'
-        response_ts = requests.get(result_endpoint, headers=headers)
-        print(f"got experiment {experiment_id}")
-        # if '' then the experiment has not started yet
-        if response_ts.text == '' or 'bad' in response_ts.text:
-            j_ts = {'experiment_id': experiment_id}
-            new_j_ts = j_ts
-            new_j_ts['upload_ts'] = str(datetime.utcnow())
-            pope.write_to_json(file_name=f'{directory}/../uploads/no_results.json', jayson=[new_j_ts], mode='w')
-            pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/no_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-            
+def generate_results(results_jayson):  
+    flattened_j_ts = []
+    flattened_metrics = []
+
+    for metric in results_jayson['metrics']:
+        
+        if 'results' in metric.keys():
+            for ts in metric['results']:
+                flattened_results = []
+
+                for element in ts['timeseries']:
+                    flattened_timeseries = []
+                    element['upload_ts'] = str(datetime.utcnow())
+                    flattened_timeseries.append(flatten(element, {}, ''))
+
+                    # Replace old 'timeseries' with new 'flattened_timeseries'
+                    updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
+                    flattened_results.extend(flatten_dupe_vals(vals=updated_results, key='timeseries'))
+
+            # Replace old 'metrics' with new 'flattened_results'
+            update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
+            flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
+
         else:
-            j_ts = json.loads(response_ts.text)
+            flattened_metrics = [flatten(results_jayson, {}, '')]
+    
+    update_new_j_ts = populating_vals(outer_dict=results_jayson, inner_flattened_list=flattened_metrics, destination_key='metrics')
+    flattened_j_ts.extend(flatten_dupe_vals(vals=update_new_j_ts, key='metrics'))
 
-            new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
+    return flattened_j_ts
 
-            flattened_j_ts = []
-            flattened_metrics = []
-
-            for metric in new_j_ts['metrics']:
-                
-                if 'results' in metric.keys():
-                    for ts in metric['results']:
-                        flattened_results = []
-
-                        for element in ts['timeseries']:
-                            flattened_timeseries = []
-                            element['upload_ts'] = str(datetime.utcnow())
-                            flattened_timeseries.append(flatten(element, {}, ''))
-
-                            # Replace old 'timeseries' with new 'flattened_timeseries'
-                            updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
-                            flattened_results.extend(flatten_dupe_vals(vals=updated_results, key='timeseries'))
-
-                    # Replace old 'metrics' with new 'flattened_results'
-                    update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
-                    flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
-
-                else:
-                    flattened_metrics = [flatten(new_j_ts, {}, '')]
-            
-            update_new_j_ts = populating_vals(outer_dict=new_j_ts, inner_flattened_list=flattened_metrics, destination_key='metrics')
-            flattened_j_ts.extend(flatten_dupe_vals(vals=update_new_j_ts, key='metrics'))
-
-            pope.write_to_json(file_name=f'{directory}/../uploads/results.json', jayson=flattened_j_ts, mode='w')
-            pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-            print(f"Successfully uploaded result time series for experiment {experiment_id}")
 
 if __name__ == '__main__':
 
@@ -251,8 +232,29 @@ if __name__ == '__main__':
     
 
     ############################################### generate and upload all experiments ##############################
+    # loop over all experiment_id in experiment_id_list from above
+    for experiment_id in experiment_id_list:
+        result_endpoint = f'https://api.optimizely.com/v2/experiments/{experiment_id}/timeseries'
+        response_ts = requests.get(result_endpoint, headers=headers)
+        print(f"got experiment {experiment_id}")
+        # if '' then the experiment has not started yet
+        if response_ts.text == '' or 'bad' in response_ts.text:
+            j_ts = {'experiment_id': experiment_id}
+            new_j_ts = j_ts
+            new_j_ts['upload_ts'] = str(datetime.utcnow())
+            pope.write_to_json(file_name=f'{directory}/../uploads/no_results.json', jayson=[new_j_ts], mode='w')
+            pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/no_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+            
+        else:
+            j_ts = json.loads(response_ts.text)
 
-    generate_results(experiment_id_list)
+            new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
+
+        flattened_j_ts = generate_results(new_j_ts)
+
+        pope.write_to_json(file_name=f'{directory}/../uploads/results.json', jayson=flattened_j_ts, mode='w')
+        pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+        print(f"Successfully uploaded result time series for experiment {experiment_id}")
 
 
     
