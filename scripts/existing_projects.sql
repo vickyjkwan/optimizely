@@ -1,0 +1,1 @@
+SELECT DISTINCT id FROM `infusionsoft-looker-poc.optimizely.projects`

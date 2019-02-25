@@ -16,7 +16,7 @@ def check_bq_ts(table_name, ts_col_name):
 
 # this function should get timestamp for each entity (project, experiment, or result), from API,
 # returns only those with a timestamp that is later than the benchmark, benchmark_ts
-def check_api_ts(api_path, table, ts_col, benchmark_ts):
+def check_api_ts(api_path, table, ts_col, benchmark_ts, existing_id):
     
     # compare each of the project's last_modified timestamp to the above last upload_ts
     # select only if last_modified > upload_ts
@@ -31,6 +31,8 @@ def check_api_ts(api_path, table, ts_col, benchmark_ts):
     for entity in all_existing:
         entity_ts = datetime.strptime(entity[ts_col], '%Y-%m-%dT%H:%M:%S.%fz') + timedelta(hours=-8)
         if  entity_ts > benchmark_ts:
+            updating_entity_id.append(entity['id'])
+        elif entity['id'] not in existing_id:
             updating_entity_id.append(entity['id'])
 
     return updating_entity_id
@@ -69,7 +71,7 @@ if __name__ == '__main__':
     ######################### updating projects #########################
     # idea is to:
     # GET [project_id, last_modified_ts]
-    # if new_project_id is not in {project_id} set: right now PD limit creation of new projects, therefore, this step is omitted
+    # if new_project_id is not in {project_id} set: add to it
     # if new_project_id is in {project_id} set: 
         # if last_modified_ts > bq.last_modified_ts: add [project_id, project_props, last_modified_ts(new), upload_ts]
         # else: do nothing
@@ -81,7 +83,12 @@ if __name__ == '__main__':
 
     # get projects with last_modified timestamps that are later than the previous ts
     # getting ready to upload
-    updating_projects = check_api_ts(api_path=project_endpoint, table='project', ts_col='last_modified', benchmark_ts=last_upload_ts.replace(tzinfo=None))
+    project_query = open('existing_projects.sql').read()
+    existing_projects = []
+    for result in pope.bq_query(project_query):
+        existing_projects.append(result[0])
+
+    updating_projects = check_api_ts(api_path=project_endpoint, table='project', ts_col='last_modified', benchmark_ts=last_upload_ts.replace(tzinfo=None), existing_id=existing_projects)
     updating_projects_json = generate_new_entity(id_list=updating_projects, api_path='https://api.optimizely.com/v2/projects', table='project')
 
     # send to bq
