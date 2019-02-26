@@ -87,11 +87,10 @@ if __name__ == '__main__':
     updating_projects = check_api_ts(api_path=project_endpoint, ts_col='last_modified', benchmark_ts=last_upload_ts.replace(tzinfo=None), existing_id=existing_projects)
     updating_projects_json = generate_new_entity(id_list=updating_projects, api_path='https://api.optimizely.com/v2/projects', table='project')
 
-    print(updating_projects_json)
     # send to bq
-    # pope.write_to_json(file_name=f'{directory}/../uploads/update_projects.json', jayson=updating_projects_json, mode='w')
-    # pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/update_projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-    # print(f"Successfully uploaded updated info for projects.")  
+    pope.write_to_json(file_name=f'{directory}/../uploads/update_projects.json', jayson=updating_projects_json, mode='w')
+    pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/update_projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    print(f"Successfully uploaded updated info for projects.")  
 
     
 
