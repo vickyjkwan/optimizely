@@ -16,17 +16,12 @@ def check_bq_ts(table_name, ts_col_name):
 
 # this function should get timestamp for each entity (project, experiment, or result), from API,
 # returns only those with a timestamp that is later than the benchmark, benchmark_ts
-def check_api_ts(api_path, table, ts_col, benchmark_ts, existing_id):
+def check_api_ts(api_path, ts_col, benchmark_ts, existing_id):
     
     # compare each of the project's last_modified timestamp to the above last upload_ts
     # select only if last_modified > upload_ts
     updating_entity_id = []
-    if table == 'project':
-        all_existing = generate_projects(api_path, headers)
-    # elif table == 'experiment':
-    #     all_existing = generate_experiment(api_path, headers)
-    else:
-        pass
+    all_existing = generate_projects(api_path, headers)
 
     for entity in all_existing:
         entity_ts = datetime.strptime(entity[ts_col], '%Y-%m-%dT%H:%M:%S.%fz') + timedelta(hours=-8)
@@ -89,13 +84,14 @@ if __name__ == '__main__':
     for result in pope.bq_query(project_query):
         existing_projects.append(result[0])
 
-    updating_projects = check_api_ts(api_path=project_endpoint, table='project', ts_col='last_modified', benchmark_ts=last_upload_ts.replace(tzinfo=None), existing_id=existing_projects)
+    updating_projects = check_api_ts(api_path=project_endpoint, ts_col='last_modified', benchmark_ts=last_upload_ts.replace(tzinfo=None), existing_id=existing_projects)
     updating_projects_json = generate_new_entity(id_list=updating_projects, api_path='https://api.optimizely.com/v2/projects', table='project')
 
+    print(updating_projects_json)
     # send to bq
-    pope.write_to_json(file_name=f'{directory}/../uploads/update_projects.json', jayson=updating_projects_json, mode='w')
-    pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/update_projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-    print(f"Successfully uploaded updated info for projects.")  
+    # pope.write_to_json(file_name=f'{directory}/../uploads/update_projects.json', jayson=updating_projects_json, mode='w')
+    # pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/update_projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    # print(f"Successfully uploaded updated info for projects.")  
 
     
 
