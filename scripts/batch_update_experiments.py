@@ -12,7 +12,7 @@ if __name__ == '__main__':
     #     os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
     gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
 
-    # directory = str(os.path.abspath(os.path.dirname(__file__)))
+    directory = str(os.path.abspath(os.path.dirname(__file__)))
 
     pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
     headers = {
@@ -22,12 +22,12 @@ if __name__ == '__main__':
     experiment_endpoint = 'https://api.optimizely.com/v2/experiments'
 
     ######################### updating experiments #########################
-    experiment_query = open('existing_experiments.sql').read()
+    experiment_query = open(f'{directory}/existing_experiments.sql').read()
     existing_experiments = []
     for result in pope.bq_query(experiment_query):
         existing_experiments.append((result[0], datetime.strftime(result[1], '%Y-%m-%dT%H:%M:%S.%fz')))
 
-    project_query = open('existing_projects.sql').read()
+    project_query = open(f'{directory}/existing_projects.sql').read()
     existing_projects = []
     for result in pope.bq_query(project_query):
         existing_projects.append(result[0])    
@@ -57,11 +57,11 @@ if __name__ == '__main__':
         
     all_singles, metrics_table, variations_table = generate_experiments(updated_experiments)    
 
-    pope.write_to_json(file_name='../uploads/update_experiments_single_fields.json', jayson=all_singles, mode='w')
-    pope.write_to_bq(table_name='experiments_single_fields', file_name='../uploads/update_experiments_single_fields.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    pope.write_to_json(file_name=f'{directory}/../uploads/update_experiments_single_fields.json', jayson=all_singles, mode='w')
+    pope.write_to_bq(table_name='experiments_single_fields', file_name=f'{directory}/../uploads/update_experiments_single_fields.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
 
-    pope.write_to_json(file_name='../uploads/update_experiments_metrics_table.json', jayson=metrics_table, mode='w')
-    pope.write_to_bq(table_name='experiments_metrics_table', file_name='../uploads/update_experiments_metrics_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    pope.write_to_json(file_name=f'{directory}/../uploads/update_experiments_metrics_table.json', jayson=metrics_table, mode='w')
+    pope.write_to_bq(table_name='experiments_metrics_table', file_name=f'{directory}/../uploads/update_experiments_metrics_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
     
-    pope.write_to_json(file_name='../uploads/update_experiments_variations_table.json', jayson=variations_table, mode='w')
-    pope.write_to_bq(table_name='experiments_variations_table', file_name='../uploads/update_experiments_variations_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    pope.write_to_json(file_name=f'{directory}/../uploads/update_experiments_variations_table.json', jayson=variations_table, mode='w')
+    pope.write_to_bq(table_name='experiments_variations_table', file_name=f'{directory}/../uploads/update_experiments_variations_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
