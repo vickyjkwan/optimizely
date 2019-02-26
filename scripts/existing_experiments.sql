@@ -1,0 +1,1 @@
+SELECT DISTINCT id, MAX(upload_ts) FROM `infusionsoft-looker-poc.optimizely.origin_experiments_single_fields` GROUP BY 1

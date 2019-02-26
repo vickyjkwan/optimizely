@@ -4,8 +4,7 @@ import popelines
 import os
 from datetime import datetime, timedelta
 from main import fix_values, populating_vals, flatten, flatten_dupe_vals
-from generate_original import read_endpoint, generate_projects
-from batch_update_projects import check_bq_ts, check_api_ts, generate_new_entity
+from generate_original import read_endpoint, generate_projects, generate_experiments
 
 
 if __name__ == '__main__':
@@ -20,18 +19,49 @@ if __name__ == '__main__':
         'Authorization': 'Bearer 2:EWAWmaXb4TgtYVU2VvwoEF-9UbJxBahkiFh1633_Oc9nmju7iJis',
     }
 
+    experiment_endpoint = 'https://api.optimizely.com/v2/experiments'
+
     ######################### updating experiments #########################
-    experiment_endpoint = 
+    experiment_query = open('existing_experiments.sql').read()
+    existing_experiments = []
+    for result in pope.bq_query(experiment_query):
+        existing_experiments.append((result[0], datetime.strftime(result[1], '%Y-%m-%dT%H:%M:%S.%fz')))
 
-    # get the timestamp from bq for experiment table, at which the job was most recently run
-    last_upload_ts = check_bq_ts('origin_experiments_single_fields', 'upload_ts')
+    project_query = open('existing_projects.sql').read()
+    existing_projects = []
+    for result in pope.bq_query(project_query):
+        existing_projects.append(result[0])    
 
-    # get experiments with last_modified timestamps that are later than the previous ts
-    # getting ready to upload
-    updating_experiments = check_api_ts(api_path=experiment_endpoint, table='experiment', ts_col='last_modified', benchmark_ts=last_upload_ts.replace(tzinfo=None))
-    updating_experiments_json = generate_new_entity(id_list=updating_experiments, api_path='https://api.optimizely.com/v2/projects', table='experiment')
+    updated_experiments = []
+    for project_id in existing_projects:
+        # params include project_id (required) and experiments pulling per each request (default only 25)
+        params = (
+            ('project_id', project_id),
+            ('per_page', 100),
+        ) 
 
-    # send to bq
-    # pope.write_to_json(file_name='../uploads/update_experiments.json', jayson=updating_experiments_json, mode='w')
-    # pope.write_to_bq(table_name='update_experiments', file_name='../uploads/update_experiments.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-    # print(f"Successfully uploaded updated info for projects.")  
+        exp_list = read_endpoint(endpoint=experiment_endpoint, headers_set=headers, params_set=params)
+
+        for exp in exp_list:
+            # checking if exp is not in the existing experiment list, then append
+            if exp['id'] not in [x[0] for x in existing_experiments]:
+                updated_experiments.append(exp)
+
+            # if exp is in the existing experiment list, then check if last modified timestamp was larger than last upload timestamp
+            else:
+                if exp['last_modified'] > [x[1] for x in existing_experiments if x[0] == exp['id']][0]:
+                    updated_experiments.append(exp)
+                    
+                else:
+                    None
+        
+    all_singles, metrics_table, variations_table = generate_experiments(updated_experiments)    
+
+    pope.write_to_json(file_name='../uploads/update_experiments_single_fields.json', jayson=all_singles, mode='w')
+    pope.write_to_bq(table_name='experiments_single_fields', file_name='../uploads/update_experiments_single_fields.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+
+    pope.write_to_json(file_name='../uploads/update_experiments_metrics_table.json', jayson=metrics_table, mode='w')
+    pope.write_to_bq(table_name='experiments_metrics_table', file_name='../uploads/update_experiments_metrics_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    
+    pope.write_to_json(file_name='../uploads/update_experiments_variations_table.json', jayson=variations_table, mode='w')
+    pope.write_to_bq(table_name='experiments_variations_table', file_name='../uploads/update_experiments_variations_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
