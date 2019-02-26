@@ -249,14 +249,12 @@ if __name__ == '__main__':
             
         else:
             j_ts = json.loads(response_ts.text)
-
             new_j_ts = pope.fix_json_values(callback=fix_values, obj=j_ts, reset_key='results')
+            flattened_j_ts = generate_results(new_j_ts)
 
-        flattened_j_ts = generate_results(new_j_ts)
-
-        pope.write_to_json(file_name=f'{directory}/../uploads/results.json', jayson=flattened_j_ts, mode='w')
-        pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-        print(f"Successfully uploaded result time series for experiment {experiment_id}")
+            pope.write_to_json(file_name=f'{directory}/../uploads/results.json', jayson=flattened_j_ts, mode='w')
+            pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+            print(f"Successfully uploaded result time series for experiment {experiment_id}")
 
 
     
