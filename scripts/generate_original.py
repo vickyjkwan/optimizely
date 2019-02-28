@@ -127,31 +127,53 @@ def generate_experiments(exp_list):
 
 ############################################### generate and upload all result time series ########################
 def generate_results(results_jayson):  
+    # flattened_j_ts = []
+    # flattened_metrics = []
+
+    # for metric in results_jayson['metrics']:
+        
+    #     if 'results' in metric.keys():
+    #         flattened_results = []
+    #         for ts in metric['results']:
+
+    #             for element in ts['timeseries']:
+    #                 flattened_timeseries = []
+    #                 element['upload_ts'] = str(datetime.utcnow())
+    #                 flattened_timeseries.append(flatten(element, {}, ''))
+
+    #                 # Replace old 'timeseries' with new 'flattened_timeseries'
+    #                 updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
+    #                 flattened_results.extend(flatten_dupe_vals(vals=updated_results, key='timeseries'))
+
+    #         # Replace old 'metrics' with new 'flattened_results'
+    #         update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
+    #         flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
+
+    #     else:
+    #         flattened_metrics = [flatten(results_jayson, {}, '')]
+    
+    # update_new_j_ts = populating_vals(outer_dict=results_jayson, inner_flattened_list=flattened_metrics, destination_key='metrics')
+    # flattened_j_ts.extend(flatten_dupe_vals(vals=update_new_j_ts, key='metrics'))
+
     flattened_j_ts = []
     flattened_metrics = []
 
     for metric in results_jayson['metrics']:
-        
+
         if 'results' in metric.keys():
+            flattened_results = []
             for ts in metric['results']:
-                flattened_results = []
-
-                for element in ts['timeseries']:
-                    flattened_timeseries = []
-                    element['upload_ts'] = str(datetime.utcnow())
-                    flattened_timeseries.append(flatten(element, {}, ''))
-
-                    # Replace old 'timeseries' with new 'flattened_timeseries'
-                    updated_results = populating_vals(outer_dict=ts, inner_flattened_list=flattened_timeseries, destination_key='timeseries')
-                    flattened_results.extend(flatten_dupe_vals(vals=updated_results, key='timeseries'))
+                flattened_timeseries = []
+                ts['upload_ts'] = str(datetime.utcnow())
+                flattened_timeseries.append(flatten(ts, {}, ''))
 
             # Replace old 'metrics' with new 'flattened_results'
-            update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_results, destination_key='results')
+            update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_timeseries, destination_key='results')
             flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
 
         else:
             flattened_metrics = [flatten(results_jayson, {}, '')]
-    
+
     update_new_j_ts = populating_vals(outer_dict=results_jayson, inner_flattened_list=flattened_metrics, destination_key='metrics')
     flattened_j_ts.extend(flatten_dupe_vals(vals=update_new_j_ts, key='metrics'))
 
@@ -186,8 +208,8 @@ if __name__ == '__main__':
         project['upload_ts'] = str(datetime.utcnow())
 
     # upload projects 
-    pope.write_to_json(file_name=f'{directory}/../uploads/projects.json', jayson=all_projects, mode='w')
-    pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    # pope.write_to_json(file_name=f'{directory}/../uploads/projects.json', jayson=all_projects, mode='w')
+    # pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
 
 
     ############################################### generate and upload all experiments ##############################
@@ -215,22 +237,22 @@ if __name__ == '__main__':
             exp_id_list.append(exp['id'])
         experiment_id_list.extend(exp_id_list)
 
-        all_singles, metrics_table, variations_table = generate_experiments(exp_list)
-        origin_single_table.extend(all_singles)
-        origin_metrics_table.extend(metrics_table)
-        origin_variations_table.extend(variations_table)
+        # all_singles, metrics_table, variations_table = generate_experiments(exp_list)
+        # origin_single_table.extend(all_singles)
+        # origin_metrics_table.extend(metrics_table)
+        # origin_variations_table.extend(variations_table)
 
-    pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_single_fields.json', jayson=origin_single_table, mode='w')
-    pope.write_to_bq(table_name='experiments_single_fields', file_name=f'{directory}/../uploads/origin_experiments_single_fields.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-    print(f"Successfully uploaded single layer part for experiment {exp['id']}")  
+    # pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_single_fields.json', jayson=origin_single_table, mode='w')
+    # pope.write_to_bq(table_name='experiments_single_fields', file_name=f'{directory}/../uploads/origin_experiments_single_fields.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    # print(f"Successfully uploaded single layer part for experiment {exp['id']}")  
 
-    pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_metrics_table.json', jayson=origin_metrics_table, mode='w')
-    pope.write_to_bq(table_name='experiments_metrics_table', file_name=f'{directory}/../uploads/origin_experiments_metrics_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-    print(f"Successfully uploaded nested part for experiment {exp['id']}")  
+    # pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_metrics_table.json', jayson=origin_metrics_table, mode='w')
+    # pope.write_to_bq(table_name='experiments_metrics_table', file_name=f'{directory}/../uploads/origin_experiments_metrics_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    # print(f"Successfully uploaded nested part for experiment {exp['id']}")  
 
-    pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_variations_table.json', jayson=origin_variations_table, mode='w')
-    pope.write_to_bq(table_name='experiments_variations_table', file_name=f'{directory}/../uploads/origin_experiments_variations_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
-    print(f"Successfully uploaded nested part for experiment {exp['id']}") 
+    # pope.write_to_json(file_name=f'{directory}/../uploads/origin_experiments_variations_table.json', jayson=origin_variations_table, mode='w')
+    # pope.write_to_bq(table_name='experiments_variations_table', file_name=f'{directory}/../uploads/origin_experiments_variations_table.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    # print(f"Successfully uploaded nested part for experiment {exp['id']}") 
     
 
     ############################################### generate and upload all experiments ##############################
