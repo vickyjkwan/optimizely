@@ -4,7 +4,7 @@ import popelines
 import os
 from datetime import datetime, timedelta
 from main import fix_values, populating_vals, flatten, flatten_dupe_vals
-from generate_original import read_endpoint, generate_projects, generate_experiments
+from generate_original_with_timeseries import read_endpoint, generate_projects, generate_experiments
 
 
 if __name__ == '__main__':
