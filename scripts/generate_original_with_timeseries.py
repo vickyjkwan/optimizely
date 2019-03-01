@@ -156,7 +156,6 @@ def generate_results(results_jayson):
     # flattened_j_ts.extend(flatten_dupe_vals(vals=update_new_j_ts, key='metrics'))
 
     flattened_j_ts = []
-    flattened_metrics = []
 
     for metric in results_jayson['metrics']:
 
@@ -167,15 +166,15 @@ def generate_results(results_jayson):
                 ts['upload_ts'] = str(datetime.utcnow())
                 flattened_timeseries.append(flatten(ts, {}, ''))
 
-            # Replace old 'metrics' with new 'flattened_results'
-            update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_timeseries, destination_key='results')
-            flattened_metrics.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
+                # Replace old 'metrics' with new 'flattened_results'
+                update_metrics = populating_vals(outer_dict=metric, inner_flattened_list=flattened_timeseries, destination_key='results')
+                flattened_results.extend(flatten_dupe_vals(vals=update_metrics, key='results'))
 
         else:
-            flattened_metrics = [flatten(results_jayson, {}, '')]
+            flattened_results = [flatten(results_jayson, {}, '')]
 
-    update_new_j_ts = populating_vals(outer_dict=results_jayson, inner_flattened_list=flattened_metrics, destination_key='metrics')
-    flattened_j_ts.extend(flatten_dupe_vals(vals=update_new_j_ts, key='metrics'))
+        update_new_j_ts = populating_vals(outer_dict=results_jayson, inner_flattened_list=flattened_results, destination_key='metrics')
+        flattened_j_ts.extend(flatten_dupe_vals(vals=update_new_j_ts, key='metrics'))
 
     return flattened_j_ts
 

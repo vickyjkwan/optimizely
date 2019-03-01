@@ -1,1 +1,1 @@
-SELECT DISTINCT id, MAX(upload_ts) FROM `infusionsoft-looker-poc.optimizely.experiments_single_fields` GROUP BY 1
+SELECT DISTINCT id, earliest, last_modified, status FROM `infusionsoft-looker-poc.optimizely.experiments_single_fields`
