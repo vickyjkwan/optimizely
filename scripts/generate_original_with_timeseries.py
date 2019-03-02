@@ -10,13 +10,12 @@ from main import fix_values, populating_vals, flatten, flatten_dupe_vals
 def read_endpoint(endpoint, headers_set, params_set=None):
     try:
         response = requests.get(endpoint, headers=headers_set, params=params_set)
-        response_text = json.loads(response.text)
         response.raise_for_status()
 
     except requests.exceptions.HTTPError as err:
         print(err)
 
-    return response_text
+    return response
 
 
 # generate all projects within account

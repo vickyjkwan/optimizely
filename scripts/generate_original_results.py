@@ -8,32 +8,34 @@ from generate_original_with_timeseries import read_endpoint, generate_results
 
 
 # given a start_timestamp and an end_timestamp, this function returns hourly results by calling the results endpoint at hourly interval, between these timestamps
-def results_generator(start_timestamp, end_timestamp, experiment_id, headers, params):
+def results_generator(start_timestamp, end_timestamp, experiment_id, headers, params, pope, gbq_key):
+
     now = datetime.strptime(start_timestamp, '%Y-%m-%dT%H:%M:%SZ')
     exp_results = []
     
-    while now <= datetime.strptime(end_timestamp,'%Y-%m-%dT%H:%M:%SZ'):
+    while now < datetime.strptime(end_timestamp,'%Y-%m-%dT%H:%M:%SZ'):
         start_ts = datetime.strftime(now, '%Y-%m-%dT%H:%M:%SZ')
         end_ts = datetime.strftime(now + timedelta(hours=1), '%Y-%m-%dT%H:%M:%SZ')
         params = (
             ('per_page', 100),
         ) 
+        print(f"start time is {start_ts}, end time is {end_ts}")
 
         result_endpoint = f"https://api.optimizely.com/v2/experiments/{experiment_id}/results?start_time={start_ts}&end_time={end_ts}"
-        response_ts = read_endpoint(result_endpoint, headers_set=headers, params_set=params)
+        response = read_endpoint(result_endpoint, headers_set=headers, params_set=params)
         print(f"got experiment {experiment_id}")
 
         # if '' then the experiment has not started yet
-        if response_ts == '' or 'bad' in response_ts:
+        if response.text == '' or 'bad' in response:
             j_ts = {'experiment_id': experiment_id}
             new_j_ts = j_ts
             new_j_ts['upload_ts'] = str(datetime.utcnow())
             new_j_ts['metric_calculating_ts'] = end_ts
-            exp_results.extend(new_j_ts)
+            exp_results.append(new_j_ts)
 
         else:
 
-            new_j_ts = pope.fix_json_values(callback=fix_values, obj=response_ts, reset_key='results')
+            new_j_ts = pope.fix_json_values(callback=fix_values, obj=json.loads(response.text), reset_key='results')
             newer_j_ts = pope.fix_json_values(callback=fix_values, obj=new_j_ts, reset_key='variations')
             flattened_j_ts = generate_results(newer_j_ts)
             exp_results.extend(flattened_j_ts)
@@ -88,10 +90,8 @@ if __name__ == '__main__':
         if exp['status'] == 'archived' or exp['status'] == 'experiment_archived':  
             if exp['earliest'] is not None:
                 start_timestamp = datetime.strftime(exp['earliest'], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
-            else:
-                start_timestamp = '2018-01-01T00:00:00Z'
-            end_timestamp = datetime.strftime(exp['last_modified'], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
-            exp_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=exp['id'], headers=headers, params=params))
+                end_timestamp = datetime.strftime(exp['last_modified'], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
+                exp_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=exp['id'], headers=headers, params=params, pope=pope, gbq_key=gbq_key))
 
         elif exp['status'] == 'not_started':
             print('no results to be backfilled')
@@ -99,18 +99,14 @@ if __name__ == '__main__':
         elif exp['status'] == 'running':
             if exp['earliest'] is not None:
                 start_timestamp = datetime.strftime(exp['earliest'], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
-            else:
-                start_timestamp = '2018-01-01T00:00:00Z'
-            end_timestamp = datetime.strftime(datetime.now(), '%Y-%m-%dT%H:%M:%SZ')
-            exp_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=exp['id'], headers=headers, params=params))
+                end_timestamp = datetime.strftime(datetime.now(), '%Y-%m-%dT%H:%M:%SZ')
+                exp_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=exp['id'], headers=headers, params=params, pope=pope, gbq_key=gbq_key))
 
         elif exp['status'] == 'paused':
             if exp['earliest'] is not None:
                 start_timestamp = datetime.strftime(exp['earliest'], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
-            else:
-                start_timestamp = '2018-01-01T00:00:00Z'
-            end_timestamp = datetime.strftime(exp['last_modified'], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
-            exp_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=exp['id'], headers=headers, params=params))
+                end_timestamp = datetime.strftime(exp['last_modified'], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
+                exp_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=exp['id'], headers=headers, params=params, pope=pope, gbq_key=gbq_key))
 
         else:
             print(f"Experiment {exp['id']} shows a new experiment status. Need to investigate.")
