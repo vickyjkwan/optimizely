@@ -21,7 +21,8 @@ def read_endpoint(endpoint, headers_set, params_set=None):
 # generate all projects within account
 def generate_projects(project_endpoint, project_headers):
 
-    j_proj = read_endpoint(endpoint=project_endpoint, headers_set=project_headers)
+    j_response = read_endpoint(endpoint=project_endpoint, headers_set=project_headers)
+    j_proj = json.loads(j_response.text)
 
     return j_proj
 

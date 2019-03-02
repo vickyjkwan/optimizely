@@ -41,7 +41,8 @@ if __name__ == '__main__':
             ('per_page', 100),
         ) 
 
-        exp_list = read_endpoint(endpoint=experiment_endpoint, headers_set=headers, params_set=params)
+        exp_response = read_endpoint(endpoint=experiment_endpoint, headers_set=headers, params_set=params)
+        exp_list = json.loads(exp_response.text)
 
         for exp in exp_list:
             # checking if exp is not in the existing experiment list, then append
