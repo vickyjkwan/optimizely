@@ -76,7 +76,6 @@ if __name__ == '__main__':
         details = {}
         details['id'] = result['id']
         if result['earliest'] is None:
-            # details['earliest'] = None
             details['earliest'] = None
             details['status'] = 'experiment_archived'
         else:
@@ -111,7 +110,7 @@ if __name__ == '__main__':
         else:
             print(f"Experiment {exp['id']} shows a new experiment status. Need to investigate.")
 
-    pope.write_to_json(file_name=f'{directory}/../uploads/testing_results.json', jayson=exp_results, mode='w')
-    pope.write_to_bq(table_name='testing_results', file_name=f'{directory}/../uploads/testing_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)    
+    pope.write_to_json(file_name=f'{directory}/../uploads/results.json', jayson=exp_results, mode='w')
+    pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)    
 
 
