@@ -50,7 +50,7 @@ if __name__ == '__main__':
     # ############################################### Keys and Authentication #######################################
     if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
         os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
-    # gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
+    gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
 
     directory = str(os.path.abspath(os.path.dirname(__file__)))
     # directory = os.getcwd()
@@ -67,7 +67,7 @@ if __name__ == '__main__':
         ('per_page', 100),
     )
 
-    query = open(f'{directory}/existing_experiments.sql').read()
+    query = open(f'{directory}/../queries/existing_experiments.sql').read()
     results = pope.bq_query(query)
 
     # a little clean up before sending hourly calls
@@ -109,8 +109,9 @@ if __name__ == '__main__':
 
         else:
             print(f"Experiment {exp['id']} shows a new experiment status. Need to investigate.")
-
-    pope.write_to_json(file_name=f'{directory}/../uploads/results.json', jayson=exp_results, mode='w')
+        
+        pope.write_to_json(file_name=f'{directory}/../uploads/results.json', jayson=exp_results, mode='w')
+    
     pope.write_to_bq(table_name='results', file_name=f'{directory}/../uploads/results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)    
 
 

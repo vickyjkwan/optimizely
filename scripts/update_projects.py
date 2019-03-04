@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     # get projects with last_modified timestamps that are later than the previous ts
     # getting ready to upload
-    project_query = open(f'{directory}/existing_projects.sql').read()
+    project_query = open(f'{directory}/../queries/existing_projects.sql').read()
     existing_projects = []
     for result in pope.bq_query(project_query):
         existing_projects.append(result[0])
