@@ -44,6 +44,6 @@ for exp in running_exp:
     pope.write_to_json(file_name=f'{directory}/updating_results.json', jayson=new_results, mode='w')
     break
 
-pope.write_to_bq(table_name='updating_results', file_name=f'{directory}/updating_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)    
+pope.write_to_bq(table_name='results', file_name=f'{directory}/updating_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)    
 
 
