@@ -23,12 +23,12 @@ if __name__ == '__main__':
     experiment_endpoint = 'https://api.optimizely.com/v2/experiments'
 
     ######################### updating experiments #########################
-    experiment_query = open(f'{directory}/../queries/existing_experiments.sql').read()
+    experiment_query = open(f'{directory}/existing_experiments.sql').read()
     existing_experiments = []
     for result in pope.bq_query(experiment_query):
         existing_experiments.append((result[0], datetime.strftime(result[2], '%Y-%m-%dT%H:%M:%S.%fz')))
 
-    project_query = open(f'{directory}/../queries/existing_projects.sql').read()
+    project_query = open(f'{directory}/existing_projects.sql').read()
     existing_projects = []
     for result in pope.bq_query(project_query):
         existing_projects.append(result[0])    

@@ -67,7 +67,7 @@ if __name__ == '__main__':
         ('per_page', 100),
     )
 
-    query = open(f'{directory}/../queries/existing_experiments.sql').read()
+    query = open(f'{directory}/existing_experiments.sql').read()
     results = pope.bq_query(query)
 
     # a little clean up before sending hourly calls
