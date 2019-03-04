@@ -1,1 +1,1 @@
-SELECT DISTINCT id, earliest, last_modified, status FROM `infusionsoft-looker-poc.optimizely.experiments_single_fields`
+SELECT DISTINCT id, earliest, upload_ts, status FROM `infusionsoft-looker-poc.optimizely.experiments_single_fields`
