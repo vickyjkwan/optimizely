@@ -48,12 +48,12 @@ def results_generator(start_timestamp, end_timestamp, experiment_id, headers, pa
 if __name__ == '__main__':
 
     # ############################################### Keys and Authentication #######################################
-    # if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
-    #     os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
-    gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
+    if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
+        os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
+    # gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
 
-    # directory = str(os.path.abspath(os.path.dirname(__file__)))
-    directory = os.getcwd()
+    directory = str(os.path.abspath(os.path.dirname(__file__)))
+    # directory = os.getcwd()
 
     ############################################### Instantiating Popelines #######################################
     pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
