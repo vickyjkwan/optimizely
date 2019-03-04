@@ -88,8 +88,8 @@ if __name__ == '__main__':
     updating_projects_json = generate_new_entity(id_list=updating_projects, api_path='https://api.optimizely.com/v2/projects', table='project')
 
     # send to bq
-    pope.write_to_json(file_name=f'{directory}/../uploads/update_projects.json', jayson=updating_projects_json, mode='w')
-    pope.write_to_bq(table_name='projects', file_name=f'{directory}/../uploads/update_projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
+    pope.write_to_json(file_name=f'{directory}/update_projects.json', jayson=updating_projects_json, mode='w')
+    pope.write_to_bq(table_name='projects', file_name=f'{directory}/update_projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
     print(f"Successfully uploaded updated info for projects.")  
 
     
