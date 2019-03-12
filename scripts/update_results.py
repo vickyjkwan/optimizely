@@ -45,6 +45,17 @@ for exp in running_exp:
         new_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=new_exp[0][0], headers=headers, params=params, pope=pope, gbq_key=gbq_key))
         pope.write_to_json(file_name=f'{directory}/updating_results.json', jayson=new_results, mode='w')
 
+    else:
+        starting_query = open(f'{directory}/new_results.sql').read().replace('exp_id', f"{exp['id']}")
+        new_exp = pope.bq_query(query)
+
+        start_timestamp = datetime.strftime(new_exp[0][1], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
+        end_timestamp = datetime.strftime(datetime.now(), '%Y-%m-%dT%H:%M:%SZ')
+        
+        new_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=new_exp[0][0], headers=headers, params=params, pope=pope, gbq_key=gbq_key))
+        pope.write_to_json(file_name=f'{directory}/updating_results.json', jayson=new_results, mode='w')
+
+
 pope.write_to_bq(table_name='results', file_name=f'{directory}/updating_results.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)    
 
 
