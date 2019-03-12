@@ -47,7 +47,7 @@ for exp in running_exp:
 
     else:
         starting_query = open(f'{directory}/new_results.sql').read().replace('exp_id', f"{exp['id']}")
-        new_exp = pope.bq_query(query)
+        new_exp = pope.bq_query(starting_query)
 
         start_timestamp = datetime.strftime(new_exp[0][1], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
         end_timestamp = datetime.strftime(datetime.now(), '%Y-%m-%dT%H:%M:%SZ')
