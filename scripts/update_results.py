@@ -8,6 +8,7 @@ from generate_original_with_timeseries import read_endpoint, generate_results
 from generate_original_results import results_generator
 
 # ############################################### Keys and Authentication #######################################
+gbq_key = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
 directory = str(os.path.abspath(os.path.dirname(__file__)))
 # directory = os.getcwd()
