@@ -182,9 +182,7 @@ def generate_results(results_jayson):
 if __name__ == '__main__':
 
     ############################################### Keys and Authentication #######################################
-    if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
-        os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
-    gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
+    gbq_key = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
     directory = str(os.path.abspath(os.path.dirname(__file__)))
 

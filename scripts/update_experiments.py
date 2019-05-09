@@ -8,9 +8,7 @@ from generate_original_with_timeseries import read_endpoint, generate_projects, 
 
 
 if __name__ == '__main__':
-    if not os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS'):
-        os.environ['GOOGLE_ACCOUNT_CREDENTIALS'] = '/home/engineering/keyfile.json'
-    gbq_key = os.environ.get('GOOGLE_ACCOUNT_CREDENTIALS')
+    gbq_key = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
     directory = str(os.path.abspath(os.path.dirname(__file__)))
     # directory = os.getcwd()
