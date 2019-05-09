@@ -16,7 +16,7 @@ directory = str(os.path.abspath(os.path.dirname(__file__)))
 # directory = os.getcwd()
 
 ############################################### Instantiating Popelines #######################################
-pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
+pope = popelines.popeline(dataset_id='optimizely', directory='.', verbose=False)
 
 # Optimizely parameters
 headers = {
