@@ -91,7 +91,3 @@ if __name__ == '__main__':
     pope.write_to_json(file_name=f'{directory}/update_projects.json', jayson=updating_projects_json, mode='w')
     pope.write_to_bq(table_name='projects', file_name=f'{directory}/update_projects.json', append=True, ignore_unknown_values=False, bq_schema_autodetect=False)
     print(f"Successfully uploaded updated info for projects.")  
-
-    
-
-
