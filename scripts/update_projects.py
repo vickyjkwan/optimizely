@@ -7,16 +7,20 @@ from main import fix_values, populating_vals, flatten, flatten_dupe_vals
 from generate_original_with_timeseries import read_endpoint, generate_projects
 
 
-# this function checks the last time a job was run on bq,
-# returns the last-run timestamp for the table
 def check_bq_ts(table_name, ts_col_name):
+    """
+    this function checks the last time a job was run on bq,
+    returns the last-run timestamp for the table
+    """
     last_upload_ts = pope.find_last_entry(table_name, ts_col_name) + timedelta(hours=-8)
     return last_upload_ts
 
 
-# this function should get timestamp for each entity (project, experiment, or result), from API,
-# returns only those with a timestamp that is later than the benchmark, benchmark_ts
 def check_api_ts(api_path, ts_col, benchmark_ts, existing_id):
+    """
+    this function should get timestamp for each entity (project, experiment, or result), from API,
+    returns only those with a timestamp that is later than the benchmark, benchmark_ts
+    """
     
     # compare each of the project's last_modified timestamp to the above last upload_ts
     # select only if last_modified > upload_ts
@@ -33,8 +37,10 @@ def check_api_ts(api_path, ts_col, benchmark_ts, existing_id):
     return updating_entity_id
 
 
-# this function gathers all new entity dictionaries in a list, returns a format that is friendly to popelines
 def generate_new_entity(id_list, api_path, table):
+    """
+    this function gathers all new entity dictionaries in a list, returns a format that is friendly to popelines
+    """
     new_json = []
     for entity_id in id_list:
         if table == 'project':
@@ -51,12 +57,11 @@ def generate_new_entity(id_list, api_path, table):
 
 
 if __name__ == '__main__':
-    gbq_key = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
     directory = str(os.path.abspath(os.path.dirname(__file__)))
-    # directory = os.getcwd()
 
-    pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
+    pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=f'{directory}/optimizely_svcacc.json', directory='.', verbose=False)
+    
     headers = {
         'Authorization': 'Bearer 2:EWAWmaXb4TgtYVU2VvwoEF-9UbJxBahkiFh1633_Oc9nmju7iJis',
     }

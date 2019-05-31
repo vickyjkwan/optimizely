@@ -8,12 +8,11 @@ from generate_original_with_timeseries import read_endpoint, generate_projects, 
 
 
 if __name__ == '__main__':
-    gbq_key = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
     directory = str(os.path.abspath(os.path.dirname(__file__)))
-    # directory = os.getcwd()
 
-    pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=gbq_key, directory='.', verbose=False)
+    pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=f'{directory}/optimizely_svcacc.json', directory='.', verbose=False)
+    
     headers = {
         'Authorization': 'Bearer 2:EWAWmaXb4TgtYVU2VvwoEF-9UbJxBahkiFh1633_Oc9nmju7iJis',
     }
