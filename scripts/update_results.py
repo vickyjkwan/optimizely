@@ -37,7 +37,7 @@ for exp in running_exp:
         start_timestamp = datetime.strftime(new_exp[0][1], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
         end_timestamp = datetime.strftime(datetime.now(), '%Y-%m-%dT%H:%M:%SZ')
         
-        new_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=new_exp[0][0], headers=headers, params=params, pope=pope, gbq_key=gbq_key))
+        new_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=new_exp[0][0], headers=headers, params=params, pope=pope)
         pope.write_to_json(file_name=f'{directory}/updating_results.json', jayson=new_results, mode='w')
 
     else:
@@ -47,7 +47,7 @@ for exp in running_exp:
         start_timestamp = datetime.strftime(new_exp[0][1], '%Y-%m-%dT%H:%M:%SZ')[:14] + str('00:00Z')
         end_timestamp = datetime.strftime(datetime.now(), '%Y-%m-%dT%H:%M:%SZ')
         
-        new_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=new_exp[0][0], headers=headers, params=params, pope=pope, gbq_key=gbq_key))
+        new_results.extend(results_generator(start_timestamp, end_timestamp, experiment_id=new_exp[0][0], headers=headers, params=params, pope=pope)
         pope.write_to_json(file_name=f'{directory}/updating_results.json', jayson=new_results, mode='w')
 
 
