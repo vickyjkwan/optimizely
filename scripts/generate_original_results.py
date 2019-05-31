@@ -7,9 +7,11 @@ from main import fix_values, populating_vals, flatten, flatten_dupe_vals
 from generate_original_with_timeseries import read_endpoint, generate_results
 
 
-# given a start_timestamp and an end_timestamp, this function returns hourly results by calling the results endpoint at hourly interval, between these timestamps
 def results_generator(start_timestamp, end_timestamp, experiment_id, headers, params, pope, gbq_key):
-
+    """
+    given a start_timestamp and an end_timestamp, this function returns hourly results by calling
+    the results endpoint at hourly interval, between these timestamps
+    """
     now = datetime.strptime(start_timestamp, '%Y-%m-%dT%H:%M:%SZ')
     exp_results = []
     
