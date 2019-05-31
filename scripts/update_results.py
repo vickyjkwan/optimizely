@@ -11,7 +11,7 @@ from generate_original_results import results_generator
 directory = str(os.path.abspath(os.path.dirname(__file__)))
 
 ############################################### Instantiating Popelines #######################################
-pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=f'{directory}/optimizely_svcacc.json', directory='.', verbose=False)
+pope = popelines.popeline(dataset_id='optimizely', service_key_file_loc=f'{directory}/../optimizely_svcacc.json', directory='.', verbose=False)
 
 # Optimizely parameters
 headers = {
